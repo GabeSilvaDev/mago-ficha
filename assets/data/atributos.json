@@ -1,0 +1,42 @@
+{
+  "descricao": "Atributos são as capacidades inatas do personagem. São nove, divididos em três categorias: Físicos, Sociais e Mentais. Cada um vai de 1 a 5.",
+  "regra_criacao": {
+    "modo": "distribuicao",
+    "valor_inicial": 1,
+    "maximo_criacao": 4,
+    "maximo": 5,
+    "distribuicao": [
+      {"valor": 4, "quantidade": 1},
+      {"valor": 3, "quantidade": 3},
+      {"valor": 2, "quantidade": 4},
+      {"valor": 1, "quantidade": 1}
+    ],
+    "texto": "Distribua os valores entre os 9 atributos, em qualquer ordem: um 4, três 3, quatro 2 e um 1 (4-3-3-3-2-2-2-2-1). Subir para 5 só depois, com pontos de bônus ou experiência."
+  },
+  "categorias": [
+    {
+      "nome": "Físicos",
+      "tracos": [
+        {"nome": "Força", "descricao": "Poder muscular bruto: levantar, carregar, quebrar e o dano em combate corpo a corpo."},
+        {"nome": "Destreza", "descricao": "Agilidade, coordenação, reflexos, equilíbrio e precisão dos movimentos."},
+        {"nome": "Vigor", "descricao": "Resistência física, fôlego e saúde — a capacidade de suportar dano, esforço e cansaço."}
+      ]
+    },
+    {
+      "nome": "Sociais",
+      "tracos": [
+        {"nome": "Carisma", "descricao": "Charme natural, simpatia e a capacidade de atrair, agradar e liderar as pessoas."},
+        {"nome": "Manipulação", "descricao": "Habilidade de influenciar, persuadir e conduzir os outros na direção que você deseja."},
+        {"nome": "Aparência", "descricao": "Impacto visual e presença física: beleza, porte e a primeira impressão que você causa."}
+      ]
+    },
+    {
+      "nome": "Mentais",
+      "tracos": [
+        {"nome": "Percepção", "descricao": "Atenção aos detalhes e a capacidade de notar o que acontece à sua volta."},
+        {"nome": "Inteligência", "descricao": "Conhecimento, memória, raciocínio lógico e capacidade de aprender e planejar."},
+        {"nome": "Raciocínio", "descricao": "Rapidez de pensamento, esperteza e reação mental sob pressão."}
+      ]
+    }
+  ]
+}

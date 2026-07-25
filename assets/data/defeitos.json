@@ -1,0 +1,25 @@
+{
+  "descricao": "Defeitos são desvantagens. Nesta mesa servem SÓ para equilibrar os pontos positivos (Antecedentes + Qualidades) — NÃO concedem os 15 pontos de bônus. Máximo de 4 Defeitos, e a soma deles deve ser exatamente igual à dos positivos (equilíbrio de intensidade).",
+  "defeitos": [
+    {"nome": "Amaldiçoado", "custo": {"tipo": "faixa", "min": 1, "max": 5}, "resumo": "Uma maldição ou padrão constante de azar interfere na vida do personagem."},
+    {"nome": "Atavismo de Estresse", "custo": {"tipo": "fixo", "valor": 4}, "exclui": "Berserker", "resumo": "Sob estresse intenso, entra em fúria e perde o controle. Mesma característica que a Qualidade Berserker — não pode ter os dois."},
+    {"nome": "Construto", "custo": {"tipo": "fixo", "valor": 2}, "resumo": "Origem artificial o deixa socialmente deslocado e diferente dos humanos comuns."},
+    {"nome": "Ecos", "custo": {"tipo": "faixa", "min": 1, "max": 5}, "resumo": "Fenômenos sobrenaturais estranhos acompanham o personagem por causa de sua natureza ou Ressonância."},
+    {"nome": "Inimigo", "custo": {"tipo": "faixa", "min": 1, "max": 5}, "resumo": "Uma pessoa, organização ou entidade trabalha ativamente contra o personagem."},
+    {"nome": "Perturbação", "custo": {"tipo": "opcoes", "valores": [3, 5]}, "subtipos": ["Amnésia", "Demência", "Desassociação", "Desordem de Múltiplas Personalidades — DMP", "Desordem de Personalidade Antissocial — DPA", "Esquizofrenia", "Megalomania", "Paranoia", "Transtorno Bipolar", "Transtorno Obsessivo-Compulsivo — TOC"], "resumo": "Condição mental persistente que interfere no comportamento (3 ou 5). Escolha uma manifestação."},
+    {"nome": "TEPT", "custo": {"tipo": "faixa", "min": 2, "max": 5}, "resumo": "Traumas anteriores provocam gatilhos, dificuldades emocionais e reações de estresse."},
+    {"nome": "Vício", "custo": {"tipo": "opcoes", "valores": [1, 3]}, "resumo": "Dependência prejudicial de uma substância, atividade ou comportamento (1 leve ou 3 grave)."}
+  ],
+  "geneticos": {
+    "descricao": "Defeitos Genéticos são uma categoria especial ligada ao Antecedente Aprimoramento (cada ponto de Aprimoramento exige 1 Defeito Genético ou 1 ponto permanente de Paradoxo). NÃO têm valor de 1 a 5 e NÃO entram na soma dos pontos negativos, nem substituem os 2 Defeitos pontuados obrigatórios.",
+    "valorParaEquilibrio": 0,
+    "tipos": [
+      "Aparência Aprimorada",
+      "Destreza Aprimorada",
+      "Força Aprimorada",
+      "Inteligência Aprimorada",
+      "Percepção Aprimorada",
+      "Vigor Aprimorado"
+    ]
+  }
+}

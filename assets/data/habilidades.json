@@ -1,0 +1,65 @@
+{
+  "descricao": "Habilidades são as coisas que o personagem aprendeu a fazer. São 33, divididas em Talentos (intuitivas), Perícias (treinadas) e Conhecimentos (teóricos). Vão de 0 a 5.",
+  "regra_criacao": {
+    "modo": "prioridade",
+    "valor_inicial": 0,
+    "maximo_criacao": 3,
+    "maximo": 5,
+    "prioridades": [
+      {"chave": "primaria", "nome": "Principal", "pontos": 15, "especializacoes": 2},
+      {"chave": "secundaria", "nome": "Secundário", "pontos": 11, "especializacoes": 1},
+      {"chave": "terciaria", "nome": "Terciário", "pontos": 9, "especializacoes": 0}
+    ],
+    "texto": "Todas as Habilidades começam em 0. Escolha a prioridade de cada coluna e marque exatamente os pontos: Principal 15 (2 especializações), Secundário 11 (1 especialização), Terciário 9 (sem especialização). Nesta primeira distribuição nenhuma Habilidade pode passar de 3 — subir para 4 ou 5 só nos Toques Finais, com pontos de bônus. Especialização = um foco específico dentro de uma Habilidade que você tenha (ex.: Armas de Fogo: revólveres)."
+  },
+  "categorias": [
+    {
+      "nome": "Talentos",
+      "tracos": [
+        {"nome": "Prontidão", "descricao": "Estar alerta e reagir rápido a perigos e mudanças repentinas."},
+        {"nome": "Artes", "descricao": "Talento criativo e sensibilidade estética: desenhar, cantar, atuar, improvisar."},
+        {"nome": "Esportes", "descricao": "Aptidão atlética geral: correr, saltar, nadar, escalar e praticar esportes."},
+        {"nome": "Consciência", "descricao": "Sensibilidade para o sobrenatural e para energias e presenças sutis."},
+        {"nome": "Briga", "descricao": "Combate desarmado: socos, chutes, agarrões e luta corpo a corpo."},
+        {"nome": "Empatia", "descricao": "Perceber e compreender os sentimentos, humores e intenções dos outros."},
+        {"nome": "Expressão", "descricao": "Comunicar ideias e emoções com clareza, na fala ou na escrita."},
+        {"nome": "Intimidação", "descricao": "Impor-se pela força, ameaça, presença ou pura força de vontade."},
+        {"nome": "Liderança", "descricao": "Inspirar, comandar e coordenar pessoas, conquistando confiança."},
+        {"nome": "Manha", "descricao": "Esperteza de rua, malícia e conhecimento do submundo e da vida urbana."},
+        {"nome": "Lábia", "descricao": "Enrolar, seduzir e convencer na conversa: charme, blefe e papo."}
+      ]
+    },
+    {
+      "nome": "Perícias",
+      "tracos": [
+        {"nome": "Ofícios", "descricao": "Trabalhos manuais e artesanato: consertar, construir e fabricar objetos."},
+        {"nome": "Condução", "descricao": "Dirigir e pilotar veículos em situações normais e de risco."},
+        {"nome": "Etiqueta", "descricao": "Saber se portar em diferentes meios sociais, protocolos e boas maneiras."},
+        {"nome": "Armas de Fogo", "descricao": "Usar, mirar e manter pistolas, rifles e outras armas de projétil."},
+        {"nome": "Artes Marciais", "descricao": "Técnicas de combate treinadas, golpes especiais e disciplina de luta."},
+        {"nome": "Meditação", "descricao": "Concentrar a mente, acalmar-se e alcançar foco e estados alterados."},
+        {"nome": "Armas Brancas", "descricao": "Combate com lâminas, bastões e armas corpo a corpo em geral."},
+        {"nome": "Pesquisa", "descricao": "Localizar informações em livros, arquivos, bancos de dados e fontes."},
+        {"nome": "Furtividade", "descricao": "Mover-se em silêncio, esconder-se e passar despercebido."},
+        {"nome": "Sobrevivência", "descricao": "Orientar-se, caçar, achar abrigo e resistir em ambientes selvagens."},
+        {"nome": "Tecnologia", "descricao": "Operar, ajustar e improvisar com aparelhos eletrônicos e mecânicos modernos."}
+      ]
+    },
+    {
+      "nome": "Conhecimentos",
+      "tracos": [
+        {"nome": "Acadêmicos", "descricao": "Cultura geral, história, literatura, línguas e humanidades."},
+        {"nome": "Computação", "descricao": "Programação, redes, sistemas e manipulação de dados e software."},
+        {"nome": "Cosmologia", "descricao": "Estrutura mística da realidade: planos, Umbra e princípios mágikos."},
+        {"nome": "Enigmas", "descricao": "Resolver charadas, decifrar padrões e desvendar mistérios e códigos."},
+        {"nome": "Esoterismo", "descricao": "Conhecimento de tradições místicas, símbolos e teorias ocultas."},
+        {"nome": "Investigação", "descricao": "Reunir pistas, deduzir e reconstruir fatos a partir de evidências."},
+        {"nome": "Direito", "descricao": "Leis, processos, contratos e o funcionamento da justiça."},
+        {"nome": "Medicina", "descricao": "Diagnóstico, tratamento de ferimentos e doenças e conhecimento do corpo."},
+        {"nome": "Ocultismo", "descricao": "Saber prático sobre rituais, criaturas sobrenaturais e o mundo mágico."},
+        {"nome": "Política", "descricao": "Entender governos, poder, influência e os jogos por trás das decisões."},
+        {"nome": "Ciência", "descricao": "Física, química, biologia e o método científico aplicado ao mundo."}
+      ]
+    }
+  ]
+}

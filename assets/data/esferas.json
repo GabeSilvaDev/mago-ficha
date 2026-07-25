@@ -1,0 +1,56 @@
+{
+  "descricao": "As Esferas são os campos da mágika que o mago domina. São nove. Na criação você recebe 6 pontos para distribuir livremente, e uma delas é sua Esfera de Afinidade (definida pela Facção).",
+  "regra_criacao": {
+    "pontos_gratuitos": 6,
+    "maximo_criacao": 3,
+    "arete_inicial": 1,
+    "forca_vontade_inicial": 5,
+    "paradoxo_inicial": 0,
+    "texto": "Distribua 6 pontos livremente entre as Esferas. Uma delas é a sua Afinidade (definida pela Facção) e precisa receber pelo menos 1 ponto. Iniciantes têm limite de 3 em cada Esfera."
+  },
+  "esferas": [
+    {"chave": "correspondence", "nome": "Correspondência", "descricao": "Espaço, distância e conexões: mover-se e agir à distância, unir ou separar lugares."},
+    {"chave": "entropy", "nome": "Entropia", "descricao": "Sorte, destino, ordem e decadência: probabilidades, azar, deterioração e fados."},
+    {"chave": "forces", "nome": "Forças", "descricao": "Energias físicas: fogo, eletricidade, luz, som, gravidade e movimento."},
+    {"chave": "life", "nome": "Vida", "descricao": "Os corpos vivos: curar, ferir, transformar e alterar seres orgânicos."},
+    {"chave": "mind", "nome": "Mente", "descricao": "Pensamento e consciência: telepatia, ilusões, controle mental e projeção."},
+    {"chave": "matter", "nome": "Matéria", "descricao": "A matéria inanimada: transmutar, moldar e alterar objetos e substâncias."},
+    {"chave": "prime", "nome": "Primórdio", "descricao": "A energia primal (Quintessência) da criação: criar do nada e afetar padrões mágicos."},
+    {"chave": "spirit", "nome": "Espírito", "descricao": "O mundo espiritual e a Umbra: espíritos, portais e as realidades além do véu."},
+    {"chave": "time", "nome": "Tempo", "descricao": "Percepção e manipulação do tempo: presságios, acelerar, retardar e ver além do agora."}
+  ],
+  "afinidades": {
+    "Adeptos da Virtualidade": ["correspondence"],
+    "Irmandade Akáshica — Akashayana": ["mind"],
+    "Coro Celestial": ["prime"],
+    "Culto do Êxtase — Sahajiya": ["time"],
+    "Eutanatos — Chakravanti": ["entropy"],
+    "Filhos / Sociedade do Éter": ["matter"],
+    "Oradores dos Sonhos — Kha'vadi": ["spirit"],
+    "Ordem de Hermes": ["forces"],
+    "Verbena": ["life"],
+
+    "Engenheiros do Vácuo": ["spirit", "correspondence", "forces"],
+    "Iteração X": ["forces", "matter", "time"],
+    "Nova Ordem Mundial — NOM": ["correspondence", "mind"],
+    "Progenitores": ["prime", "life"],
+    "Sindicato": ["entropy", "mind", "prime"],
+
+    "Ahl-i-Batin": ["correspondence", "mind"],
+    "Bata'a": ["spirit", "life"],
+    "Cavaleiros Templários": ["forces", "mind", "prime", "life"],
+    "Crianças do Conhecimento": ["entropy", "forces", "matter", "prime"],
+    "Irmãs de Hipólita": ["mind", "life"],
+    "Kopa Loei": ["*"],
+    "Ngoma": ["spirit", "mind", "prime", "life"],
+    "Órfãos": ["*"],
+    "Taftâni": ["spirit", "forces", "matter", "prime"],
+    "Vazios": ["*"],
+    "Wu Lung": ["spirit", "forces", "matter", "life"],
+
+    "Nenhuma": ["*"]
+  },
+  "bloqueios": {
+    "Ahl-i-Batin": ["entropy"]
+  }
+}

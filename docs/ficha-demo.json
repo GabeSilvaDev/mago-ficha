@@ -1,0 +1,203 @@
+{
+  "id": "demo-readme-0001",
+  "modoLivre": true,
+  "nome": "Aurélio Vasques",
+  "jogador": "Ficha de demonstração",
+  "cronica": "As Portas de Vidro",
+  "natureza": "Cruzado",
+  "comportamento": "Enganador",
+  "essencia": "Dinâmica",
+  "afiliacao": "Tradições",
+  "faccao": "Coro Celestial",
+  "conceito": "Padre bibliotecário que ouve coisas nas entrelinhas",
+  "atributos": {
+    "Força": 2,
+    "Destreza": 3,
+    "Vigor": 2,
+    "Carisma": 3,
+    "Manipulação": 2,
+    "Aparência": 2,
+    "Percepção": 3,
+    "Inteligência": 4,
+    "Raciocínio": 1
+  },
+  "atributosPrioridade": {
+    "Físicos": "",
+    "Sociais": "",
+    "Mentais": ""
+  },
+  "habilidades": {
+    "Prontidão": 1,
+    "Artes": 0,
+    "Esportes": 0,
+    "Consciência": 3,
+    "Briga": 0,
+    "Empatia": 2,
+    "Expressão": 3,
+    "Intimidação": 0,
+    "Liderança": 0,
+    "Manha": 0,
+    "Lábia": 2,
+    "Ofícios": 0,
+    "Condução": 0,
+    "Etiqueta": 2,
+    "Armas de Fogo": 0,
+    "Artes Marciais": 0,
+    "Meditação": 3,
+    "Armas Brancas": 0,
+    "Pesquisa": 3,
+    "Furtividade": 1,
+    "Sobrevivência": 0,
+    "Tecnologia": 0,
+    "Acadêmicos": 3,
+    "Computação": 0,
+    "Cosmologia": 3,
+    "Enigmas": 2,
+    "Esoterismo": 3,
+    "Investigação": 1,
+    "Direito": 0,
+    "Medicina": 0,
+    "Ocultismo": 3,
+    "Política": 0,
+    "Ciência": 0
+  },
+  "habilidadesPrioridade": {
+    "Talentos": "secundaria",
+    "Perícias": "terciaria",
+    "Conhecimentos": "primaria"
+  },
+  "especializacoes": [
+    {
+      "habilidade": "Ocultismo",
+      "nome": "Ritos angelicais"
+    },
+    {
+      "habilidade": "Cosmologia",
+      "nome": "Hierarquias celestes"
+    },
+    {
+      "habilidade": "Expressão",
+      "nome": "Sermões"
+    }
+  ],
+  "habilidadesExtras": [],
+  "esferas": {
+    "correspondence": 0,
+    "entropy": 0,
+    "forces": 0,
+    "life": 1,
+    "mind": 0,
+    "matter": 0,
+    "prime": 3,
+    "spirit": 2,
+    "time": 0
+  },
+  "afinidade": "prime",
+  "arete": 1,
+  "forcaVontade": 5,
+  "paradoxo": 0,
+  "positivos": [
+    {
+      "classe": "antecedente",
+      "nome": "Avatar/Gênio",
+      "sel": 3,
+      "detalhe": "Uma voz que insiste em cantar"
+    },
+    {
+      "classe": "antecedente",
+      "nome": "Biblioteca",
+      "sel": 2,
+      "detalhe": "Acervo da paróquia"
+    },
+    {
+      "classe": "antecedente",
+      "nome": "Aliados",
+      "sel": 2,
+      "detalhe": "Irmandade do arquivo"
+    },
+    {
+      "classe": "qualidade",
+      "nome": "Sentidos Aguçados",
+      "sel": 3,
+      "detalhe": "Audição"
+    }
+  ],
+  "defeitos": [
+    {
+      "nome": "Amaldiçoado",
+      "sel": 3,
+      "detalhe": "Espelhos nunca mostram a mesma coisa",
+      "subtipo": ""
+    },
+    {
+      "nome": "Inimigo",
+      "sel": 4,
+      "detalhe": "Um censor da NOM",
+      "subtipo": ""
+    },
+    {
+      "nome": "Vício",
+      "sel": 3,
+      "detalhe": "Não consegue deixar um enigma em paz",
+      "subtipo": ""
+    }
+  ],
+  "defeitosGeneticos": [],
+  "bonus": {
+    "atributos": {},
+    "habilidades": {
+      "Ocultismo": 1,
+      "Cosmologia": 1
+    },
+    "esferas": {},
+    "arete": 1,
+    "forcaVontade": 5,
+    "quintessencia": 2
+  },
+  "historia": "Aurélio cuidava do arquivo diocesano quando percebeu que as margens dos livros respondiam ao que ele perguntava em voz alta. O Despertar veio devagar, em forma de anotações que ele jurava não ter escrito.",
+  "objetivosDestino": "Encontrar quem escreveu a primeira nota na margem — e descobrir se ainda está vivo.",
+  "rotinas": "Reza as horas canônicas; anota tudo em um caderno de capa preta.",
+  "focos": "Paradigma: a Criação é um texto. Instrumentos: voz, escrita, incenso.",
+  "maravilhas": [
+    {
+      "Nome": "Caderno de capa preta",
+      "Descrição": "Talismã de Primórdio 2 — guarda 6 pontos de Quintessência."
+    }
+  ],
+  "aparencia": {
+    "idade": "44",
+    "idadeAparente": "50",
+    "sexo": "Masculino",
+    "etnia": "Portuguesa",
+    "cabelos": "Grisalhos",
+    "olhos": "Castanhos",
+    "altura": "1,74 m",
+    "peso": "71 kg",
+    "descricao": "Magro, batina puída, sempre com tinta nos dedos."
+  },
+  "itensEquipamentos": "Batina, caderno, lupa, terço de contas de osso.",
+  "combate": [
+    {
+      "Arma/Manobra": "Bastão de caminhada",
+      "Dif.": "6",
+      "Dano": "For+2",
+      "Tipo": "Contundente",
+      "Alcance": "Corpo",
+      "Cadência": "1"
+    }
+  ],
+  "outrasCaracteristicas": [
+    {
+      "nome": "Latim litúrgico",
+      "valor": 4
+    }
+  ],
+  "notas": "Ficha de exemplo, criada só para as imagens do README.",
+  "vitalidadeDano": 2,
+  "experiencia": 7,
+  "fdvAtual": 7,
+  "quintAtual": 6,
+  "paradoxoAtual": 2,
+  "criadoEm": "2026-07-25T10:00:00.000",
+  "atualizadoEm": "2026-07-25T10:00:00.000"
+}

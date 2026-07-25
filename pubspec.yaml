@@ -1,0 +1,48 @@
+name: mago_a_ascensao
+description: "Ficha de personagem offline de Mago: A Ascensão (Edição 20º Aniversário)."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Armazenamento local offline (fichas salvas no aparelho)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  # IDs unicos para cada ficha
+  uuid: ^4.5.1
+  # Download da ficha preenchida sobre o PDF oficial (ficha.pdf)
+  pdf: ^3.11.1
+  printing: ^5.13.3
+  # Exportar/importar ficha em JSON (compartilhar e escolher arquivo)
+  share_plus: ^10.1.4
+  file_picker: ^8.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Gera o icone do app (Android) a partir de assets/icon/icon.png
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+
+flutter:
+  uses-material-design: true
+
+  # Dados do sistema (naturezas, comportamentos, essencias, afiliacoes, conceitos)
+  # extraidos do livro Mago: A Ascensao 20th.
+  assets:
+    - assets/data/
+    # Ficha oficial rasterizada (150dpi) + coordenadas calibradas do overlay
+    - assets/ficha/

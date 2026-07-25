@@ -1,0 +1,14 @@
+{
+  "descricao": "Qualidades são vantagens compradas com pontos POSITIVOS (junto com os Antecedentes). NÃO usam os 15 pontos de bônus. Cada uma tem seu custo. Máximo de 4 Qualidades.",
+  "qualidades": [
+    {"nome": "Afinidade Umbral", "custo": {"tipo": "fixo", "valor": 4}, "resumo": "O personagem se adapta melhor aos Outros Mundos e sofre menos com seus efeitos."},
+    {"nome": "Berserker", "custo": {"tipo": "fixo", "valor": 4}, "exclui": "Atavismo de Estresse", "resumo": "Em situações extremas, entra em um estado de combate poderoso, mas difícil de controlar. É a mesma característica que o Defeito Atavismo de Estresse — não pode ter os dois."},
+    {"nome": "Conexões", "custo": {"tipo": "instancia", "valor": 3, "rotulo": "Rede / grupo"}, "repetivel": true, "resumo": "Acesso privilegiado a uma rede social ou organização específica. 3 por grupo; pode comprar várias (redes diferentes)."},
+    {"nome": "Duro de Matar", "custo": {"tipo": "fixo", "valor": 5}, "resumo": "Resistência excepcional; continua agindo mesmo após ferimentos graves."},
+    {"nome": "Guardião da Tempestade/Viajante Quântico", "custo": {"tipo": "opcoes", "valores": [3, 5]}, "resumo": "Proteção ou facilidade especial durante viagens dimensionais e umbrais (3 ou 5)."},
+    {"nome": "Fé Verdadeira", "custo": {"tipo": "porPonto", "unidade": 7, "min": 1, "max": 5}, "repetivel": true, "resumo": "Convicção sobrenatural capaz de resistir à mágika e produzir milagres. 7 pontos por ponto de graduação."},
+    {"nome": "Idiomas", "custo": {"tipo": "instancia", "valor": 1, "rotulo": "Idioma"}, "repetivel": true, "resumo": "Um idioma adicional (falado e escrito). 1 por idioma; pode comprar vários."},
+    {"nome": "Sentidos Aguçados", "custo": {"tipo": "opcoes", "valores": [1, 3]}, "resumo": "Um sentido excepcional por 1 ponto, ou todos os sentidos físicos por 3."},
+    {"nome": "Tríade Negra", "custo": {"tipo": "fixo", "valor": 3}, "resumo": "Usa narcisismo, manipulação e ausência de remorso para influenciar outras pessoas."}
+  ]
+}

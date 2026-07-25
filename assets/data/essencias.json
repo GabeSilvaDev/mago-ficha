@@ -1,0 +1,9 @@
+{
+  "descricao": "A Essência é a natureza espiritual mais profunda do Avatar do mago — a força primordial que molda sua relação com a Ascensão. Escolha uma das quatro.",
+  "essencias": [
+    {"nome": "Dinâmica", "descricao": "Uma força apaixonada pelo progresso e pela mudança. O personagem tende a ser inquieto, motivado, intenso, impulsivo e sempre disposto a transformar alguma coisa."},
+    {"nome": "Estática", "descricao": "Um agente de estabilidade e segurança. O personagem tende a valorizar ordem, estrutura, planejamento, confiança e soluções duradouras."},
+    {"nome": "Investigadora", "descricao": "Uma sonhadora errante em busca de novos horizontes. O personagem é guiado pela curiosidade, descoberta, exploração e desejo de continuar avançando. Raramente se acomoda por muito tempo."},
+    {"nome": "Primordial", "descricao": "Uma figura enigmática ligada ao mistério primordial. O personagem costuma demonstrar calma misteriosa, instintos profundos, sonhos simbólicos e objetivos difíceis de compreender."}
+  ]
+}

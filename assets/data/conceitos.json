@@ -1,0 +1,26 @@
+{
+  "descricao": "O Conceito descreve, em poucas palavras, quem o personagem era antes (e além) do Despertar. Diferente da Essência, a lista NÃO é fechada — estes 15 são apenas sugestões do livro; você pode criar o seu próprio conceito.",
+  "lista_fechada": false,
+  "conceitos": [
+    {"nome": "Artista", "exemplos": "Escritor, dançarino, pintor ou músico."},
+    {"nome": "Ativista", "exemplos": "Jornalista, blogueiro, lobista ou descontente."},
+    {"nome": "Atleta", "exemplos": "Jogador de time, treinador pessoal, fisiculturista ou caçador de emoções."},
+    {"nome": "Criminoso", "exemplos": "Membro de gangue, vigarista, vendedor de drogas ou ladrão."},
+    {"nome": "Executivo", "exemplos": "Magnata, gerente, facilitador ou cartola."},
+    {"nome": "Guardião", "exemplos": "Policial, guarda de segurança, teórico da conspiração ou defensor social."},
+    {"nome": "Guerreiro", "exemplos": "Soldado, mercenário, vigilante ou profeta."},
+    {"nome": "Intelectual", "exemplos": "Pessoa escolarizada, professor, filósofo ou crítico social."},
+    {"nome": "Jovem", "exemplos": "Criança, estudante, inocente ou punk de sarjeta."},
+    {"nome": "Místico", "exemplos": "Padre, pastor, sacerdote, ermitão, xamã ou 'esquisitão iluminado'."},
+    {"nome": "Profissional da Noite", "exemplos": "Bartender, segurança, frequentador de clubes ou subcelebridade."},
+    {"nome": "Rebelde", "exemplos": "Vagabundo, fora da lei, tribalista urbano ou devoto de uma subcultura."},
+    {"nome": "Técnico", "exemplos": "Mecânico, técnico de laboratório, artesão ou profissional de TI."},
+    {"nome": "Trabalhador", "exemplos": "Trabalhador de chão de fábrica, vendedor de loja, motorista ou pedreiro."},
+    {"nome": "Zelador", "exemplos": "Pai ou mãe, professor, conselheiro tutelar ou profissional médico."}
+  ],
+  "exemplos_personalizados": [
+    "Ninja hacker", "Detetive paranormal", "Inventor clandestino", "Médico de combate",
+    "Espião corporativo", "Caçador de criaturas", "Pesquisador universitário",
+    "Artista de rua", "Herdeiro fugitivo", "Programador criminoso"
+  ]
+}

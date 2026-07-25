@@ -1,0 +1,25 @@
+{
+  "descricao": "A Natureza é o eu verdadeiro do personagem — quem ele realmente é por dentro, mesmo quando ninguém está olhando. Ela pode diferir do Comportamento (a máscara que mostra ao mundo).",
+  "naturezas": [
+    {"nome": "Antagonista", "resumo": "Questiona regras, expectativas e crenças, geralmente fazendo o papel de advogado do diabo."},
+    {"nome": "Ativista", "resumo": "Procura corrigir injustiças, enfrentar abusos e transformar o mundo por meio da ação."},
+    {"nome": "Benfeitor", "resumo": "Sente necessidade de ajudar, proteger e oferecer recursos a quem precisa."},
+    {"nome": "Cientista Louco", "resumo": "Ultrapassa os limites da ciência com experiências ousadas, estranhas e potencialmente perigosas."},
+    {"nome": "Criança", "resumo": "Enxerga o mundo com inocência, curiosidade e espontaneidade, mas pode ser imaturo."},
+    {"nome": "Cruzado", "resumo": "Dedica-se intensamente a uma causa religiosa, ética, científica ou filosófica."},
+    {"nome": "Enganador", "resumo": "Usa esperteza, truques e manipulação para conseguir vantagens ou derrotar inimigos."},
+    {"nome": "Hacker", "resumo": "Enxerga todo sistema como um quebra-cabeça que pode ser aberto, modificado ou contornado."},
+    {"nome": "Idealista", "resumo": "Possui fé profunda em uma ideia, crença ou modelo de mundo e se recusa a abandoná-lo."},
+    {"nome": "Inovador", "resumo": "Está sempre procurando maneiras novas e melhores de fazer as coisas."},
+    {"nome": "Malandro", "resumo": "Desafia autoridade e convenções com rebeldia, estilo e atitude."},
+    {"nome": "Mártir", "resumo": "Está disposto a sofrer ou se sacrificar pelo bem de uma pessoa, grupo ou causa."},
+    {"nome": "Máquina", "resumo": "Busca eficiência, resistência e perfeição, ignorando fraquezas e limites pessoais."},
+    {"nome": "Monstro", "resumo": "Assume deliberadamente o papel de vilão, usando crueldade e destruição. É comum entre Nefandi."},
+    {"nome": "Profeta", "resumo": "Acredita possuir uma verdade ou mensagem importante que precisa transmitir ao mundo."},
+    {"nome": "Sensual", "resumo": "Busca sensações, emoções e experiências intensas, agradáveis ou dolorosas."},
+    {"nome": "Sobrevivente", "resumo": "Faz tudo o que for necessário para superar dificuldades e continuar existindo."},
+    {"nome": "Solitário", "resumo": "Confia principalmente em si mesmo e prefere alcançar seus objetivos sem depender dos outros."},
+    {"nome": "Tradicionalista", "resumo": "Preserva costumes, ensinamentos e métodos antigos, acreditando no valor da tradição."},
+    {"nome": "Visionário", "resumo": "Persegue uma grande visão de futuro que poucas outras pessoas conseguem compreender."}
+  ]
+}

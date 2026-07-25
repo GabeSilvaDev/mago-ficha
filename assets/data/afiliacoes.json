@@ -1,0 +1,68 @@
+{
+  "afiliacoes": [
+    {
+      "nome": "Tradições",
+      "descricao": "As Tradições defendem diferentes formas de mágika, liberdade individual e a possibilidade de transformar a realidade de acordo com crenças místicas ou científicas alternativas. São nove facções.",
+      "faccoes": [
+        {"nome": "Adeptos da Virtualidade", "resumo": "Hackers da realidade que tratam o universo como um sistema capaz de ser acessado, modificado e reiniciado."},
+        {"nome": "Irmandade Akáshica — Akashayana", "resumo": "Mestres da disciplina, das artes marciais e da união entre mente, corpo e espírito."},
+        {"nome": "Coro Celestial", "resumo": "Magos religiosos que acreditam que todas as crenças verdadeiras refletem uma única Fonte divina."},
+        {"nome": "Culto do Êxtase — Sahajiya", "resumo": "Transcendem os limites da percepção por meio de experiências intensas, arte, movimento e estados alterados."},
+        {"nome": "Eutanatos — Chakravanti", "resumo": "Guardiões do ciclo da vida, morte e renascimento, combatendo corrupção e sofrimento."},
+        {"nome": "Filhos / Sociedade do Éter", "resumo": "Cientistas excêntricos que defendem possibilidades científicas rejeitadas pelo consenso."},
+        {"nome": "Oradores dos Sonhos — Kha'vadi", "resumo": "Xamãs e protetores dos espíritos, da natureza e das culturas tradicionais."},
+        {"nome": "Ordem de Hermes", "resumo": "Mestres da Alta Mágika, rituais, símbolos, elementos e conhecimentos ocultos."},
+        {"nome": "Verbena", "resumo": "Bruxos ligados à natureza, ao sangue, aos ciclos vitais e às antigas tradições pagãs."}
+      ]
+    },
+    {
+      "nome": "Tecnocracia",
+      "descricao": "A Tecnocracia acredita que a realidade deve ser organizada e protegida por meio da ciência, tecnologia, controle social e progresso planejado. Suas facções são chamadas de Convenções.",
+      "faccoes": [
+        {"nome": "Engenheiros do Vácuo", "resumo": "Exploradores do espaço, da Umbra e de dimensões desconhecidas; protegem a humanidade contra ameaças externas."},
+        {"nome": "Iteração X", "resumo": "Especialistas em máquinas, inteligência artificial, cibernética e aperfeiçoamento tecnológico do ser humano."},
+        {"nome": "Nova Ordem Mundial — NOM", "resumo": "Controla informações, educação, política, vigilância e estabilidade social."},
+        {"nome": "Progenitores", "resumo": "Cientistas especializados em genética, medicina, biotecnologia e aprimoramento da vida orgânica."},
+        {"nome": "Sindicato", "resumo": "Controla dinheiro, negócios, influência, mídia, consumo e poder econômico."}
+      ]
+    },
+    {
+      "nome": "Discrepantes (Ofícios)",
+      "descricao": "Os Discrepantes, também chamados de Ofícios, não pertencem às Tradições nem à Tecnocracia. São grupos menores que preservam seus próprios costumes, culturas e formas de mágika.",
+      "faccoes": [
+        {"nome": "Ahl-i-Batin", "resumo": "Magos da unidade divina, das conexões ocultas e da influência sutil."},
+        {"nome": "Bata'a", "resumo": "Praticantes ligados ao vodu, aos espíritos, aos ancestrais e à restauração de comunidades destruídas."},
+        {"nome": "Cavaleiros Templários", "resumo": "Guerreiros místicos que defendem cavalaria, fé, disciplina e combate contra a corrupção."},
+        {"nome": "Crianças do Conhecimento", "resumo": "Alquimistas dedicados à transformação e à perfeição espiritual e material."},
+        {"nome": "Irmãs de Hipólita", "resumo": "Guerreiras e sacerdotisas dedicadas ao Sagrado Feminino."},
+        {"nome": "Kopa Loei", "resumo": "Protetores da natureza, das divindades antigas e da cultura havaiana."},
+        {"nome": "Ngoma", "resumo": "Altos magos africanos que procuram recuperar conhecimentos e poderes roubados de seus povos."},
+        {"nome": "Órfãos", "resumo": "Magos que Despertaram sem treinamento formal e sobrevivem sem o apoio das grandes organizações."},
+        {"nome": "Taftâni", "resumo": "Feiticeiros do Oriente Médio conhecidos por uma mágika poderosa, direta e extravagante."},
+        {"nome": "Vazios", "resumo": "Magos sombrios, românticos e ligados à cultura gótica, à decadência e aos marginalizados."},
+        {"nome": "Wu Lung", "resumo": "Magos chineses que preservam a ordem celestial, a nobreza e antigos conhecimentos imperiais."}
+      ]
+    },
+    {
+      "nome": "Órfão / Independente",
+      "descricao": "Um personagem que não pertence a nenhuma organização. Um mago órfão independente pode nem conhecer as grandes organizações ou simplesmente recusar-se a participar delas. Diferente dos Órfãos da Aliança Discrepante — o livro apresenta a Crônica Órfã separadamente.",
+      "faccoes": [
+        {"nome": "Nenhuma", "resumo": "Sem facção. Afiliação: Órfão ou Independente."}
+      ]
+    },
+    {
+      "nome": "Nefandi / Caídos",
+      "descricao": "Afiliação normalmente reservada a antagonistas. Diferentes seitas nefândicas dedicadas à corrupção, destruição e danação. Exige autorização do Narrador, pois altera bastante o estilo da crônica.",
+      "faccoes": [
+        {"nome": "Nefandi / Caídos", "resumo": "Seitas dedicadas à corrupção, destruição e danação. Requer autorização do Narrador."}
+      ]
+    },
+    {
+      "nome": "Desauridos / Loucos",
+      "descricao": "Afiliação normalmente reservada a antagonistas. Normalmente não possuem uma facção organizada; podem formar cabalas, fusões ou agir sozinhos. Exige autorização do Narrador.",
+      "faccoes": [
+        {"nome": "Sem facção organizada", "resumo": "Podem formar cabalas, fusões ou agir sozinhos. Requer autorização do Narrador."}
+      ]
+    }
+  ]
+}

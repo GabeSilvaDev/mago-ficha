@@ -1,0 +1,16 @@
+{
+  "descricao": "Toques Finais: 15 pontos de bônus fixos para melhorar o personagem. Antecedentes, Qualidades e Defeitos NÃO entram nesses pontos — eles vivem só do equilíbrio positivos × Defeitos, e o total de bônus é sempre 15.",
+  "total": 15,
+  "custos": {
+    "atributo": 5,
+    "habilidade": 2,
+    "esfera": 7,
+    "arete": 4,
+    "forcaVontade": 1,
+    "quintessencia": 1
+  },
+  "quintessencia_pacote": 4,
+  "arete_maximo_criacao": 3,
+  "forca_vontade_maxima": 10,
+  "texto": "Você tem exatamente 15 pontos de bônus. Custos: Atributo 5/ponto (até 5) · Habilidade 2/ponto (é aqui que uma Habilidade sobe de 3 para 4 ou 5) · Esfera 7/ponto (limite 3 na criação) · Arete 4/ponto — começa em 1 e SÓ sobe aqui, máximo 3 na criação (até 5 depois, com experiência) · Força de Vontade 1/ponto (até 10) · Quintessência: 1 bônus = +4 pontos. Pode sobrar bônus sem gastar."
+}

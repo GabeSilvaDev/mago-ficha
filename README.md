@@ -1,0 +1,372 @@
+<div align="center">
+
+# Mago: A Ascensão — Ficha de Personagem
+
+**Ficha de personagem offline para Mago: A Ascensão (Edição 20º Aniversário),
+com as regras de criação cobradas pelo app.**
+
+Flutter · Android · PWA · 100% offline · sem conta, sem servidor
+
+[**▶ Abrir no navegador**](https://gabesilvadev.github.io/mago-ficha/) ·
+[Instalar](#instalar) · [Como foi feito](#como-foi-feito)
+
+</div>
+
+---
+
+## O problema
+
+Ficha de Mago 20ª tem **duas páginas densas** e uma criação cheia de regras que
+não perdoam: a distribuição fixa dos Atributos, as três colunas de Habilidades
+com orçamentos diferentes, o limite de iniciante nas Esferas, o equilíbrio entre
+Qualidades e Defeitos e os 15 pontos de bônus no fim. Na mesa, sempre alguém
+distribui errado e só descobre três sessões depois.
+
+A ideia aqui foi simples: **o app cobra as regras enquanto você cria**, e depois
+sai da frente enquanto você joga.
+
+<div align="center">
+  <img src="docs/img/00-lista-personagens.png" width="420" alt="Lista de personagens">
+</div>
+
+---
+
+## Criação: 7 passos, cada um travado até fechar
+
+O botão **Próximo** só habilita quando a etapa está exatamente certa. Nada de
+salvar uma ficha ilegal e descobrir depois.
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**1 · Identidade**
+
+Natureza e Comportamento (20 cada), Essência, Afiliação → Facção em cascata e
+Conceito com sugestões. Tudo obrigatório, menos a Crônica.
+
+</td>
+<td width="33%" valign="top">
+
+**Seletores em modal**
+
+Toda escolha abre uma lista rolável. **Segure o dedo** em qualquer opção para ler
+a descrição da regra — o livro inteiro está nos tooltips.
+
+</td>
+<td width="33%" valign="top">
+
+**2 · Atributos**
+
+Distribuição fixa **4-3-3-3-2-2-2-2-1**. Os chips contam ao vivo: vermelho
+quando estoura, verde quando fecha.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/img/10-wizard-1-identidade.png" alt="Passo 1: Identidade"></td>
+<td><img src="docs/img/11-seletor-modal.png" alt="Seletor em modal"></td>
+<td><img src="docs/img/12-wizard-2-atributos.png" alt="Passo 2: Atributos"></td>
+</tr>
+
+<tr>
+<td valign="top">
+
+**3 · Habilidades**
+
+Três colunas por prioridade: **Principal 15 pts + 2 especializações ·
+Secundário 11 + 1 · Terciário 9 + 0**. Máximo 3 na criação. Cada coluna aceita
+**Habilidade personalizada**, para as opcionais do livro que não cabem na ficha
+padrão.
+
+</td>
+<td valign="top">
+
+**4 · Esferas**
+
+6 pontos livres, teto de 3 por Esfera, e a Afinidade sai da Facção — o
+Ahl-i-Batin, por exemplo, simplesmente não aprende Entropia. O checklist mostra
+o que ainda falta.
+
+</td>
+<td valign="top">
+
+**5 · Vantagens & Defeitos**
+
+Antecedentes (33) + Qualidades (9) somam os positivos; os Defeitos (8) precisam
+empatar com eles. Máximo 4 de cada categoria, e o Avatar define a Quintessência
+inicial.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/img/13-wizard-3-habilidades.png" alt="Passo 3: Habilidades"></td>
+<td><img src="docs/img/15-wizard-4-esferas.png" alt="Passo 4: Esferas"></td>
+<td><img src="docs/img/16-wizard-5-vantagens.png" alt="Passo 5: Vantagens e Defeitos"></td>
+</tr>
+
+<tr>
+<td valign="top">
+
+**6 · Toques Finais**
+
+Os **15 pontos de bônus**, com os custos do livro: Atributo 5 · Habilidade 2 ·
+Esfera 7 · Arete 4 · Força de Vontade 1 · Quintessência 1 (= +4). É aqui que
+uma Habilidade passa de 3 para 4 ou 5. Pode sobrar.
+
+</td>
+<td valign="top">
+
+**⚙ Regras da ficha**
+
+*Iniciante* cobra tudo. *Livre — evolução / mestre* transforma os limites em
+avisos, para quando o personagem cresce jogando ou o narrador precisa ajustar.
+A escolha fica gravada na ficha.
+
+</td>
+<td valign="top">
+
+**7 · Detalhes**
+
+História, objetivos, rotinas, focos, maravilhas, aparência, itens, combate e
+outras características. Tudo opcional — salvar leva direto para a lista.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/img/17-wizard-6-toques-finais.png" alt="Passo 6: Toques Finais"></td>
+<td><img src="docs/img/14-menu-regras.png" alt="Menu de regras"></td>
+<td><img src="docs/img/06-ficha-detalhes.png" alt="Passo 7 / aba Detalhes"></td>
+</tr>
+</table>
+
+---
+
+## Em jogo: a ficha em 6 abas
+
+Terminada a criação, a ficha vira uma tela de consulta com **trackers que salvam
+na hora** — sem botão de salvar, sem confirmação.
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**Personagem**
+
+Identidade completa, com a Facção resolvida (Afiliações sem subdivisão não
+repetem o nome duas vezes).
+
+</td>
+<td width="33%" valign="top">
+
+**Status**
+
+Arete e Força de Vontade, roda de 20 espaços de Quintessência/Paradoxo,
+Vitalidade com as penalidades e Experiência. Toque num nível de dano para
+marcar; o ± ajusta na hora.
+
+</td>
+<td width="33%" valign="top">
+
+**Atributos & Habilidades**
+
+Valores finais (grátis + bônus) em bolinhas grandes, com a prioridade de cada
+coluna e as especializações entre parênteses.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/img/01-ficha-personagem.png" alt="Aba Personagem"></td>
+<td><img src="docs/img/02-ficha-status.png" alt="Aba Status"></td>
+<td><img src="docs/img/03-ficha-atributos-habilidades.png" alt="Aba Atributos e Habilidades"></td>
+</tr>
+
+<tr>
+<td valign="top">
+
+**Esferas**
+
+As 9 Esferas com a Afinidade marcada com ★.
+
+</td>
+<td valign="top">
+
+**Vantagens & Defeitos**
+
+Os detalhes que você escreveu aparecem entre parênteses, e o rodapé confere o
+equilíbrio: positivos = Defeitos.
+
+</td>
+<td valign="top">
+
+**Editar por seção**
+
+O lápis ✎ em cada faixa abre **só aquele pedaço** do wizard. O ✎ da barra abre a
+ficha inteira com abas no topo.
+
+</td>
+</tr>
+<tr>
+<td><img src="docs/img/04-ficha-esferas.png" alt="Aba Esferas"></td>
+<td><img src="docs/img/05-ficha-vantagens.png" alt="Aba Vantagens e Defeitos"></td>
+<td><img src="docs/img/08-editar-arete-fdv.png" alt="Edição por seção"></td>
+</tr>
+</table>
+
+### Editar por seção, de verdade
+
+Essa última tela merece um parágrafo. Clicar no ✎ de *Arete & Força de Vontade*
+abre **exatamente esses dois campos** — não o passo inteiro de Toques Finais com
+mais quarenta linhas. E como os **15 pontos de bônus são regra da criação**, eles
+não aparecem aqui: quem já jogou pode subir até o máximo do traço sem pedir
+licença a um orçamento que acabou faz tempo.
+
+O mesmo vale para as outras faixas: *Quintessência & Paradoxo* abre só a
+Quintessência, *Defeitos* abre só os Defeitos. É o `WizardScreen` recortado por
+etapa **e** por sub-seção.
+
+---
+
+## Download da ficha oficial em PDF
+
+O botão ⬇ gera um PDF **idêntico à ficha oficial de duas páginas** da edição 20º
+aniversário, com todos os valores preenchidos por cima.
+
+Como funciona: as duas páginas foram rasterizadas a 150 dpi
+(`assets/ficha/pg-*.png`) e a coordenada de **cada campo e cada bolinha** foi
+calibrada por análise de imagem, indo parar em `assets/ficha/overlay.json`. O
+`lib/services/ficha_pdf.dart` desenha o overlay e monta o A4 final. Na web o
+download sai direto pelo navegador.
+
+---
+
+## Instalar
+
+### Android
+
+Baixe o APK em [Releases](../../releases) e instale (precisa liberar "fontes
+desconhecidas"). O app é assinado com chave de debug, então o Play Protect vai
+pedir confirmação.
+
+### iPhone / iPad / qualquer navegador
+
+Abra **<https://gabesilvadev.github.io/mago-ficha/>** no Safari → botão
+Compartilhar → **Adicionar à Tela de Início**. Vira ícone, roda em tela cheia e
+funciona offline depois do primeiro carregamento.
+
+> **Faça backup.** No iOS o Safari pode descartar os dados de um site após
+> ~7 dias sem uso. Adicionar à Tela de Início reduz bastante o risco, mas o
+> seguro é o **Exportar JSON** (menu ⋮ do card da ficha) de vez em quando — o
+> mesmo arquivo importa em qualquer aparelho, inclusive no Android.
+
+---
+
+## Como foi feito
+
+### Arquitetura
+
+```
+lib/
+├── data/game_data.dart        # carrega e indexa os assets/data/*.json
+├── models/ficha.dart          # a ficha é um Map<String, dynamic> com getters defensivos
+├── store/ficha_store.dart     # persistência local (Hive)
+├── screens/
+│   ├── home_screen.dart       # lista, importar/exportar JSON
+│   ├── wizard_screen.dart     # os 7 passos — criação E edição
+│   └── ficha_view_screen.dart # as 6 abas + trackers de jogo
+├── services/
+│   ├── ficha_io.dart          # export/import .json
+│   └── ficha_pdf.dart         # overlay sobre a ficha oficial
+└── widgets/dots.dart          # as bolinhas clicáveis
+```
+
+**As regras não estão no código.** Custos, limites, listas de Antecedentes,
+Qualidades, Defeitos, Naturezas, Esferas, bloqueios por Facção — tudo vive em
+`assets/data/*.json`, carregado na inicialização. Ajustar uma regra de mesa é
+editar um JSON, não recompilar lógica.
+
+**Uma tela para criar e editar.** O `WizardScreen` recebe três eixos
+independentes:
+
+| Parâmetro | O que faz |
+|---|---|
+| `existente` | `null` cria uma ficha nova; uma `Ficha` entra em modo edição |
+| `passos` | quais das 7 etapas entram nesta sessão (`[5]` = só Toques Finais) |
+| `secoes` | quais sub-blocos da etapa aparecem (`{'arete','forcaVontade'}`) |
+
+Disso saem os três comportamentos: criação sequencial travada, edição completa
+com abas no topo, e edição cirúrgica de uma faixa só. Sem três telas duplicadas.
+
+**Ficha tolerante a versão.** O modelo guarda um `Map` e todo acesso passa por
+getter com valor padrão. Uma ficha exportada numa versão antiga importa numa
+nova sem migração: os campos que não existiam simplesmente nascem com o padrão.
+
+### Decisões que mudaram no caminho
+
+- **Os limites da criação não podem sobreviver à criação.** A primeira versão
+  respeitava o modo gravado na ficha ao editar — resultado: quem tinha marcado
+  *Iniciante* durante a criação não conseguia subir Arete depois, porque os 15
+  pontos de bônus já estavam gastos. Hoje editar uma ficha pronta **sempre** entra
+  livre. Os 15 pontos existem só no wizard de criação.
+- **Editar uma seção é editar uma seção.** Antes, o ✎ de *Arete & Força de
+  Vontade* abria o passo inteiro de Toques Finais. Virou o parâmetro `secoes`.
+- **Placar de regra some na edição.** Card de distribuição, checklist de Esferas,
+  equilíbrio de Vantagens, orçamento dos 15 — todos escondidos quando não há mais
+  regra a cobrar. Menos ruído para quem só quer ajustar um valor.
+
+### Verificar
+
+```bash
+docker compose up -d
+docker compose exec flutter flutter pub get
+docker compose exec flutter flutter analyze     # sem warnings
+docker compose exec flutter flutter test        # 30 testes
+```
+
+Os testes cobrem as regras de criação (distribuição, orçamentos, equilíbrio,
+custos de bônus), o recorte por `passos`/`secoes`, o modo livre, a geração do
+PDF e o layout das 7 telas num viewport de celular.
+
+### Rodar
+
+```bash
+# web, com hot reload, em http://localhost:8092
+docker compose exec flutter flutter run -d web-server \
+  --web-hostname 0.0.0.0 --web-port 8092
+
+# APK release
+docker compose exec flutter flutter build apk --release
+```
+
+O CI (`.github/workflows/pages.yml`) roda `analyze` + `test` a cada push e só
+publica o PWA se os dois passarem.
+
+---
+
+## Ficha de exemplo
+
+As imagens deste README usam
+[`docs/ficha-demo.json`](docs/ficha-demo.json) — um personagem fictício montado
+para fechar todas as regras de criação (4-3-3-3-2-2-2-2-1 · 15/11/9 · 6 pontos
+de Esfera · positivos 10 = Defeitos 10 · 15 bônus gastos). Importe pelo menu ⋮ da
+lista se quiser explorar o app com uma ficha pronta.
+
+---
+
+## Stack
+
+Flutter · Hive (armazenamento local) · pdf + printing (geração do PDF) ·
+share_plus e file_picker (export/import) · Docker para o ambiente de build ·
+GitHub Actions para CI e publicação.
+
+---
+
+## Aviso legal
+
+Projeto pessoal, sem fins lucrativos e sem vínculo com a editora. *Mago: A
+Ascensão*, o Mundo das Trevas e a ficha oficial reproduzida em `assets/ficha/`
+são propriedade da Paradox Interactive / White Wolf. Os textos de regra em
+`assets/data/` existem só para o app conseguir cobrar a criação e não substituem
+o livro — compre o livro.
+
+O código é meu; o material do cenário, não.

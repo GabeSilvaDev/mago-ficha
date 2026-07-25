@@ -1,0 +1,14 @@
+services:
+  flutter:
+    image: ghcr.io/cirruslabs/flutter:stable
+    container_name: mago-ascensao-flutter
+    working_dir: /app
+    volumes:
+      - .:/app
+      - pub-cache:/root/.pub-cache
+    ports:
+      - "8092:8092"   # flutter run web (hot reload)
+    command: tail -f /dev/null   # mantem container vivo; comandos via exec
+
+volumes:
+  pub-cache:

@@ -1,0 +1,25 @@
+{
+  "descricao": "O Comportamento é a máscara social — como o personagem age diante dos outros. Pode combinar ou contrastar com a Natureza verdadeira.",
+  "comportamentos": [
+    {"nome": "Antagonista", "resumo": "Questionador e confrontador. Contradiz os outros para testar ideias ou revelar falhas."},
+    {"nome": "Ativista", "resumo": "Engajado e disposto a lutar contra injustiças e problemas sociais."},
+    {"nome": "Benfeitor", "resumo": "Generoso, protetor e sempre disposto a ajudar quem precisa."},
+    {"nome": "Cientista Louco", "resumo": "Excêntrico, experimental e disposto a ultrapassar limites em nome da descoberta."},
+    {"nome": "Criança", "resumo": "Inocente, brincalhão, espontâneo e às vezes dependente da proteção dos outros."},
+    {"nome": "Cruzado", "resumo": "Determinado e dedicado a uma causa, missão ou objetivo considerado maior."},
+    {"nome": "Enganador", "resumo": "Esperto, manipulador e imprevisível, usando truques para controlar situações."},
+    {"nome": "Hacker", "resumo": "Curioso e analítico, desmontando sistemas para entendê-los, alterá-los ou melhorá-los."},
+    {"nome": "Idealista", "resumo": "Guiado por princípios elevados e pela crença em uma verdade ou futuro melhor."},
+    {"nome": "Inovador", "resumo": "Criativo, imaginativo e sempre procurando novas soluções e formas de fazer as coisas."},
+    {"nome": "Malandro", "resumo": "Rebelde, irreverente e provocador, demonstrando desprezo por regras e autoridade."},
+    {"nome": "Máquina", "resumo": "Frio, eficiente, disciplinado e incansável, evitando demonstrar fraquezas ou emoções."},
+    {"nome": "Mártir", "resumo": "Prestativo e sacrificial, colocando as necessidades dos outros acima das próprias."},
+    {"nome": "Monstro", "resumo": "Ameaçador, cruel ou assustador, usando medo e brutalidade como parte de sua imagem."},
+    {"nome": "Profeta", "resumo": "Convicto e franco, dizendo verdades desconfortáveis mesmo quando ninguém quer ouvi-las."},
+    {"nome": "Sensual", "resumo": "Intenso, carismático e guiado por sensações, emoções e experiências marcantes."},
+    {"nome": "Sobrevivente", "resumo": "Resistente, adaptável e determinado a continuar apesar de qualquer dificuldade."},
+    {"nome": "Solitário", "resumo": "Reservado, independente e aparentemente sem necessidade de companhia ou ajuda."},
+    {"nome": "Tradicionalista", "resumo": "Conservador em seus métodos, defendendo costumes, ensinamentos e formas antigas."},
+    {"nome": "Visionário", "resumo": "Inspirador e voltado ao futuro, perseguindo uma visão que os demais ainda não conseguem compreender."}
+  ]
+}
