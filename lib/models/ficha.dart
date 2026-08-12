@@ -130,6 +130,22 @@ class Ficha {
   String get faccao => _s('faccao');
   String get conceito => _s('conceito');
 
+  /// Id do retrato no `ImagemStore` (null = ficha sem retrato).
+  String? get retratoId {
+    final v = data['retratoId'];
+    return (v is String && v.isNotEmpty) ? v : null;
+  }
+
+  set retratoId(String? v) {
+    if (v == null || v.isEmpty) {
+      data.remove('retratoId');
+    } else {
+      data['retratoId'] = v;
+    }
+  }
+
+  bool get temRetrato => retratoId != null;
+
   /// Afiliação + Facção sem repetição, para mostrar em lista/cabeçalho.
   /// Afiliações sem subdivisão (Nefandi, Órfão…) repetiam o mesmo nome duas
   /// vezes; facção "vazia" ('Nenhuma', 'Sem facção organizada') também não

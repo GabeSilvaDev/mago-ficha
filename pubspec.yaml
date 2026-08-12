@@ -24,6 +24,7 @@ dependencies:
   # Exportar/importar ficha em JSON (compartilhar e escolher arquivo)
   share_plus: ^10.1.4
   file_picker: ^8.1.6
+  image: ^4.9.1
 
 dev_dependencies:
   flutter_test:

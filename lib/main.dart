@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'data/game_data.dart';
 import 'store/ficha_store.dart';
+import 'store/imagem_store.dart';
 import 'theme.dart';
 import 'screens/home_screen.dart';
 
@@ -8,6 +9,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GameData.carregar();
   await FichaStore.init();
+  await ImagemStore.init();
+  // imagem de ficha apagada não fica ocupando espaço para sempre
+  await FichaStore.limparImagensOrfas();
   runApp(const AppMagoAscensao());
 }
 

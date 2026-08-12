@@ -268,6 +268,18 @@ void main() {
     expect(f.especEsferaAtiva('forces'), isTrue);
   });
 
+  test('retratoId: ausente é null e aceita atribuição', () {
+    final f = Ficha.criar();
+    expect(f.retratoId, isNull);
+    expect(f.temRetrato, isFalse);
+    f.retratoId = 'img-1';
+    expect(f.retratoId, 'img-1');
+    expect(f.temRetrato, isTrue);
+    f.retratoId = null;
+    expect(f.retratoId, isNull);
+    expect(f.data.containsKey('retratoId'), isFalse);
+  });
+
   test('ficha antiga sem o campo abre com lista vazia', () {
     final f = Ficha({'id': 'x', 'nome': 'Antigo'});
     expect(f.especializacoesEsferas, isEmpty);
