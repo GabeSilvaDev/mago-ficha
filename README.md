@@ -238,6 +238,39 @@ calibrada por análise de imagem, indo parar em `assets/ficha/overlay.json`. O
 `lib/services/ficha_pdf.dart` desenha o overlay e monta o A4 final. Na web o
 download sai direto pelo navegador.
 
+**Nada se perde.** História grande, listas longas e traços acima de 5 não cabem
+na ficha impressa — o que sobra vai para **páginas de anexo** no fim do PDF, e o
+lugar do corte fica marcado com "(continua no anexo)". O retrato do personagem
+também sai ali, já que a ficha oficial não tem espaço para foto. Ficha pequena
+continua com as duas páginas de sempre.
+
+---
+
+## Área do narrador
+
+Uma segunda aba, do lado da lista de magos:
+
+- **Galeria** — cards com retrato, no estilo de um board: filtra por jogador ou
+  NPC, busca por nome e ordena por qualquer característica.
+- **Campos customizados** — o narrador cria os campos que quiser (texto, número
+  ou etiqueta). Os do tipo *lido da ficha* (Arete, Afiliação, Vitalidade…) não
+  são preenchidos à mão: servem para ordenar e filtrar direto pelos valores que
+  já estão na ficha.
+- **NPCs** — formulário curto com retrato, conceito e traços livres. Por baixo é
+  a mesma `Ficha` dos jogadores, então dá para promover um NPC ao criador
+  completo quando ele crescer.
+- **Cadernos** — anotações com imagens e tags, com busca em título, texto e tag.
+
+## Backup de tudo em um arquivo
+
+O menu ⋮ exporta um `.zip` com todas as fichas, os NPCs, os cadernos, as imagens
+e os campos do narrador. Cada ficha vira um `.json` dentro de `fichas/` no mesmo
+formato do export individual — dá para pescar um personagem só do zip e importar
+sozinho.
+
+Na importação o app mostra o resumo **antes de gravar** e, quando alguma ficha já
+existe no aparelho, pergunta o que fazer: duplicar, substituir ou pular.
+
 ---
 
 ## Instalar
@@ -268,16 +301,27 @@ funciona offline depois do primeiro carregamento.
 ```
 lib/
 ├── data/game_data.dart        # carrega e indexa os assets/data/*.json
-├── models/ficha.dart          # a ficha é um Map<String, dynamic> com getters defensivos
-├── store/ficha_store.dart     # persistência local (Hive)
+├── models/
+│   ├── ficha.dart             # a ficha é um Map<String, dynamic> com getters defensivos
+│   ├── campo_narrador.dart    # definição dos campos customizados
+│   └── nota.dart              # caderno de anotação
+├── store/                     # persistência local (Hive), uma box por assunto
+│   ├── ficha_store.dart       # fichas (jogadores e NPCs)
+│   ├── imagem_store.dart      # imagens reduzidas (retratos e cadernos)
+│   ├── narrador_store.dart    # config do narrador
+│   └── nota_store.dart        # cadernos
 ├── screens/
-│   ├── home_screen.dart       # lista, importar/exportar JSON
+│   ├── home_screen.dart       # abas Magos / Narrador, importar e exportar
 │   ├── wizard_screen.dart     # os 7 passos — criação E edição
-│   └── ficha_view_screen.dart # as 6 abas + trackers de jogo
+│   ├── ficha_view_screen.dart # as 6 abas + trackers de jogo
+│   └── narrador/              # galeria, cadernos, campos e NPC
 ├── services/
 │   ├── ficha_io.dart          # export/import .json
-│   └── ficha_pdf.dart         # overlay sobre a ficha oficial
-└── widgets/dots.dart          # as bolinhas clicáveis
+│   ├── backup_io.dart         # backup .zip de tudo
+│   └── ficha_pdf.dart         # overlay sobre a ficha oficial + anexo
+└── widgets/
+    ├── dots.dart              # as bolinhas clicáveis
+    └── retrato.dart           # retrato circular e seletor de imagem
 ```
 
 **As regras não estão no código.** Custos, limites, listas de Antecedentes,
@@ -356,7 +400,8 @@ lista se quiser explorar o app com uma ficha pronta.
 ## Stack
 
 Flutter · Hive (armazenamento local) · pdf + printing (geração do PDF) ·
-share_plus e file_picker (export/import) · Docker para o ambiente de build ·
+share_plus e file_picker (export/import) · archive (backup .zip) ·
+image (redimensiona os retratos) · Docker para o ambiente de build ·
 GitHub Actions para CI e publicação.
 
 ---
