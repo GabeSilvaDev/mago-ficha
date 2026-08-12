@@ -4,6 +4,7 @@ import '../models/ficha.dart';
 import '../services/ficha_io.dart';
 import '../store/ficha_store.dart';
 import '../theme.dart';
+import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 import 'ficha_view_screen.dart';
 
@@ -196,10 +197,7 @@ class _CartaoFicha extends StatelessWidget {
     ].join(' · ');
     return Card(
       child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: Cores.indigo,
-          child: Icon(Icons.auto_awesome, color: Cores.dourado),
-        ),
+        leading: RetratoAvatar(retratoId: ficha.retratoId, tamanho: 44),
         title: Text(ficha.nome.isEmpty ? 'Sem nome' : ficha.nome,
             style: const TextStyle(
                 fontWeight: FontWeight.bold, color: Cores.indigo)),

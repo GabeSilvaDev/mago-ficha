@@ -4,6 +4,7 @@ import '../models/ficha.dart';
 import '../store/ficha_store.dart';
 import '../theme.dart';
 import '../widgets/dots.dart';
+import '../widgets/retrato.dart';
 
 /// Assistente de criação de personagem — 7 passos.
 ///
@@ -561,6 +562,34 @@ class _WizardScreenState extends State<WizardScreen>
       padding: const EdgeInsets.all(16),
       children: [
         const FaixaSecao('Identidade'),
+        Center(
+          child: Column(
+            children: [
+              RetratoAvatar(retratoId: f.retratoId, tamanho: 96),
+              Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.image_outlined, size: 18),
+                    label: Text(
+                        f.temRetrato ? 'Trocar retrato' : 'Escolher retrato'),
+                    onPressed: () async {
+                      final id = await escolherRetrato(context);
+                      if (id == null || !mounted) return;
+                      setState(() => f.retratoId = id);
+                    },
+                  ),
+                  if (f.temRetrato)
+                    TextButton.icon(
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Remover'),
+                      onPressed: () => setState(() => f.retratoId = null),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
         _texto('Nome do personagem *', f.data['nome'],
             (v) => setState(() => f.data['nome'] = v)),
         _texto('Jogador *', f.data['jogador'],

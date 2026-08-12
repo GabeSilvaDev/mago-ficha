@@ -5,6 +5,7 @@ import '../models/ficha.dart';
 import '../services/ficha_pdf.dart';
 import '../store/ficha_store.dart';
 import '../theme.dart';
+import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 
 /// Exibe a ficha completa (valores FINAIS = grátis + bônus) com trackers
@@ -227,8 +228,15 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12, top: 4),
+              child: RetratoAvatar(retratoId: ficha.retratoId, tamanho: 72),
+            ),
+            Expanded(
+              child: Column(children: [
             linha('Nome', ficha.nome, 'Jogador', ficha.jogador),
             linha('Crônica', ficha.cronica, 'Conceito', ficha.conceito),
             linha('Natureza', ficha.natureza, 'Comportamento',
@@ -239,6 +247,8 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
                 ficha.faccao == ficha.afiliacao ? '— (sem subdivisão)' : ficha.faccao,
                 'Afinidade',
                 GameData.esferaPorChave(ficha.afinidade)?.nome ?? ''),
+          ]),
+            ),
           ],
         ),
       ),
