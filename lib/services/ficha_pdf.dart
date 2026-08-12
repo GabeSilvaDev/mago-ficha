@@ -127,11 +127,18 @@ class FichaPdf {
       }
     }
 
-    void fileira(PdfGraphics g, Map fila, int valor, {double rPx = 7}) {
+    /// Pinta as bolinhas da fileira. A ficha oficial tem 5 círculos impressos;
+    /// quando o valor final passa disso (mesa com teto 10), escreve o número
+    /// logo depois da última bolinha.
+    void fileira(PdfGraphics g, Map fila, int valor,
+        {double rPx = 7, PdfFont? fonte}) {
       final xs = (fila['xs'] as List).cast<num>();
       final y = fila['y'] as num;
       for (var k = 0; k < valor.clamp(0, xs.length); k++) {
         bola(g, xs[k], y, rPx);
+      }
+      if (fonte != null && valor > xs.length) {
+        texto(g, fonte, '$valor', xs.last + 13, y + 4, tam: 7.0);
       }
     }
 
@@ -161,7 +168,8 @@ class FichaPdf {
       for (final cat in GameData.atributos.categorias) {
         final filas = (p1['atributos'][cat.nome] as List);
         for (var i = 0; i < cat.tracos.length && i < filas.length; i++) {
-          fileira(g, filas[i], f.atributoFinal(cat.tracos[i].nome));
+          fileira(g, filas[i], f.atributoFinal(cat.tracos[i].nome),
+              fonte: fonte);
         }
       }
       // especializações por habilidade (escritas na linha, antes das bolinhas)
@@ -182,7 +190,7 @@ class FichaPdf {
         final filas = (p1['habilidades'][cat.nome] as List);
         for (var i = 0; i < cat.tracos.length && i < filas.length; i++) {
           final nomeHab = cat.tracos[i].nome;
-          fileira(g, filas[i], f.habilidadeFinal(nomeHab));
+          fileira(g, filas[i], f.habilidadeFinal(nomeHab), fonte: fonte);
           final specs = especPorHab[nomeHab];
           if (specs != null) {
             final fila = filas[i] as Map;
@@ -200,7 +208,7 @@ class FichaPdf {
         final filas = (esf[c] as List);
         final chaves = (ordem[c] as List).cast<String>();
         for (var i = 0; i < chaves.length && i < filas.length; i++) {
-          fileira(g, filas[i], f.esferaFinal(chaves[i]));
+          fileira(g, filas[i], f.esferaFinal(chaves[i]), fonte: fonte);
         }
       }
       // Antecedentes (até 6) + excedente/outras características pg1 (7)
@@ -237,8 +245,8 @@ class FichaPdf {
       _sobrasPg2 = sobras.skip(out1Filas.length).toList();
 
       // Arete / Força de Vontade / Vitalidade
-      fileira(g, p1['arete'] as Map, f.areteFinal);
-      fileira(g, p1['fdvCirc'] as Map, f.forcaVontadeFinal);
+      fileira(g, p1['arete'] as Map, f.areteFinal, fonte: fonte);
+      fileira(g, p1['fdvCirc'] as Map, f.forcaVontadeFinal, fonte: fonte);
       final fdvQ = p1['fdvQuad'] as Map<String, dynamic>;
       final fdvXs = (fdvQ['xs'] as List).cast<num>();
       for (var k = 0; k < f.fdvAtual.clamp(0, fdvXs.length); k++) {

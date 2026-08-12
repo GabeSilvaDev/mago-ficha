@@ -80,4 +80,22 @@ void main() {
     out.createSync(recursive: true);
     out.writeAsBytesSync(bytes);
   });
+
+  test('ficha com Esfera 7 e Arete 8 gera PDF sem estourar', () async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Mestre da mesa livre';
+    f.modoLivre = true;
+    f.setEsfera('correspondence', 7);
+    f.setEsfera('forces', 6);
+    f.afinidade = 'correspondence';
+    f.data['arete'] = 8;
+
+    final bytes = await FichaPdf.gerar(f);
+    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    expect(bytes.length, greaterThan(100000));
+
+    final out = File('build/ficha_test_teto10.pdf');
+    out.createSync(recursive: true);
+    out.writeAsBytesSync(bytes);
+  });
 }
