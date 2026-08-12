@@ -285,6 +285,21 @@ existe no aparelho, pergunta o que fazer: duplicar, substituir ou pular.
 
 ## Instalar
 
+### Dois canais no mesmo aparelho
+
+A partir da branch `mesa-online` o app tem dois canais, assinados com a mesma
+chave e com ids diferentes — dá para ter os dois instalados lado a lado:
+
+```bash
+flutter build apk --release --flavor estavel   # com.kodem.mago_a_ascensao        "Mago: A Ascensão"
+flutter build apk --release --flavor beta      # com.kodem.mago_a_ascensao.beta   "Mago (teste)"
+```
+
+O canal `beta` existe para testar mudanças grandes sem tocar na ficha que está
+em uso na mesa. Cada canal atualiza por cima de si mesmo; um nunca desinstala o
+outro. Com os canais definidos, `flutter build apk` sem `--flavor` não funciona
+mais — é preciso dizer qual.
+
 ### Android
 
 Baixe o APK em [Releases](../../releases) e instale (precisa liberar "fontes
