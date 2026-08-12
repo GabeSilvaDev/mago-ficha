@@ -9,6 +9,13 @@ import 'package:pdf/widgets.dart' as pw;
 import '../data/game_data.dart';
 import '../models/ficha.dart';
 
+/// Um bloco que não coube na ficha oficial e vai para as páginas de anexo.
+class ItemAnexo {
+  final String titulo;
+  final String texto;
+  const ItemAnexo(this.titulo, this.texto);
+}
+
 /// Gera o download da ficha preenchida EXATAMENTE sobre o PDF oficial
 /// (ficha.pdf, 2 páginas). As páginas oficiais foram rasterizadas a 150dpi
 /// (assets/ficha/pg-1.png / pg-2.png) e as coordenadas de cada campo/bolinha
@@ -18,6 +25,10 @@ class FichaPdf {
   static Uint8List? _png1, _png2;
 
   static const _tinta = PdfColor.fromInt(0xFF191434);
+
+  /// Blocos que não couberam na ficha oficial na última geração.
+  /// Reiniciada no começo de `gerar()`; também usada nos testes.
+  static final List<ItemAnexo> anexoGerado = [];
 
   static Future<void> _carregar() async {
     _spec ??= jsonDecode(await rootBundle.loadString('assets/ficha/overlay.json'))
@@ -29,6 +40,7 @@ class FichaPdf {
   /// Monta o PDF final (A4, 2 páginas) e devolve os bytes.
   static Future<Uint8List> gerar(Ficha f) async {
     await _carregar();
+    anexoGerado.clear();
     final spec = _spec!;
     final dim = (spec['dim'] as List).cast<num>();
     final pgW = dim[0].toDouble(), pgH = dim[1].toDouble();
@@ -114,17 +126,35 @@ class FichaPdf {
       return linhas;
     }
 
-    void paragrafo(PdfGraphics g, PdfFont fonte, String t, List linhasY,
-        num x0, num x1, {double tam = 7.3}) {
-      if (t.trim().isEmpty) return;
-      final ls = quebra(fonte, t.trim(), (x1 - x0).toDouble(), tam);
+    /// Escreve o parágrafo nas linhas disponíveis da ficha oficial.
+    /// Se o texto não couber inteiro, marca o corte e registra o bloco
+    /// completo no anexo (o leitor recebe o texto todo, não só a sobra).
+    /// Devolve `true` quando cortou.
+    bool paragrafo(PdfGraphics g, PdfFont fonte, String t, List linhasY,
+        num x0, num x1, {double tam = 7.3, String? anexo}) {
+      if (t.trim().isEmpty) return false;
+      const marca = ' (continua no anexo)';
+      final largura = (x1 - x0).toDouble();
+      final ls = quebra(fonte, t.trim(), largura, tam);
       final n = linhasY.length;
+      final cortou = ls.length > n;
       for (var i = 0; i < ls.length && i < n; i++) {
         var linha = ls[i];
-        if (i == n - 1 && ls.length > n) linha = '$linha...';
+        if (cortou && i == n - 1) {
+          // encurta a última linha até a marca caber
+          while (linha.isNotEmpty &&
+              larguraTexto(fonte, '$linha$marca', tam) > largura * s) {
+            final corte = linha.lastIndexOf(' ');
+            if (corte <= 0) break;
+            linha = linha.substring(0, corte);
+          }
+          linha = '$linha$marca';
+        }
         texto(g, fonte, linha, x0, (linhasY[i] as num) - 4,
-            tam: tam, maxPx: (x1 - x0).toDouble() + 10);
+            tam: tam, maxPx: largura + 10);
       }
+      if (cortou && anexo != null) anexoGerado.add(ItemAnexo(anexo, t.trim()));
+      return cortou;
     }
 
     /// Pinta as bolinhas da fileira. A ficha oficial tem 5 círculos impressos;
@@ -344,21 +374,22 @@ class FichaPdf {
       }
       // Blocos de texto
       String sTxt(String k) => (f.data[k] ?? '').toString();
-      void bloco(String chave, String valor) {
+      void bloco(String chave, String valor, String titulo) {
         final b = p2[chave] as Map<String, dynamic>;
         paragrafo(g, fonte, valor, b['linhas'] as List, b['x0'] as num,
-            b['x1'] as num);
+            b['x1'] as num, anexo: titulo);
       }
 
-      bloco('historia', sTxt('historia'));
-      bloco('objetivos', sTxt('objetivosDestino'));
-      bloco('rotinas', sTxt('rotinas'));
-      bloco('focos', sTxt('focos'));
-      bloco('itens', sTxt('itensEquipamentos'));
+      bloco('historia', sTxt('historia'), 'História');
+      bloco('objetivos', sTxt('objetivosDestino'), 'Objetivos e Destino');
+      bloco('rotinas', sTxt('rotinas'), 'Rotinas');
+      bloco('focos', sTxt('focos'), 'Focos');
+      bloco('itens', sTxt('itensEquipamentos'), 'Itens e Equipamentos');
       // Aparência
       final ap = p2['aparencia'] as Map<String, dynamic>;
       paragrafo(g, fonte, (f.aparencia['descricao'] ?? '').toString(),
-          ap['livres'] as List, ap['x0'] as num, ap['x1'] as num);
+          ap['livres'] as List, ap['x0'] as num, ap['x1'] as num,
+          anexo: 'Aparência');
       final campos = ap['campos'] as Map<String, dynamic>;
       campos.forEach((k, pos) {
         final p = (pos as List).cast<num>();
@@ -380,7 +411,8 @@ class FichaPdf {
           texto(g, fonte, ls.first, descP[0], descP[1] - 4, tam: 7.3);
           if (ls.length > 1) {
             paragrafo(g, fonte, ls.skip(1).join(' '), m['linhas'] as List,
-                m['x0'] as num, m['x1'] as num);
+                m['x0'] as num, m['x1'] as num,
+                anexo: 'Maravilha — ${nome.isEmpty ? 'sem nome' : nome}');
           }
         }
       }

@@ -81,6 +81,31 @@ void main() {
     out.writeAsBytesSync(bytes);
   });
 
+  test('história longa vai para o anexo e a ficha marca o corte', () async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Tagarela';
+    f.data['historia'] = List.filled(120,
+            'Despertou numa noite de tempestade e desde então persegue o mesmo sonho.')
+        .join(' ');
+
+    await FichaPdf.gerar(f);
+
+    final titulos = FichaPdf.anexoGerado.map((e) => e.titulo).toList();
+    expect(titulos, contains('História'));
+    final item = FichaPdf.anexoGerado.firstWhere((e) => e.titulo == 'História');
+    expect(item.texto, f.data['historia']);
+  });
+
+  test('ficha curta não gera anexo', () async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Sucinto';
+    f.data['historia'] = 'Nasceu, Despertou, seguiu.';
+
+    await FichaPdf.gerar(f);
+
+    expect(FichaPdf.anexoGerado, isEmpty);
+  });
+
   test('ficha com Esfera 7 e Arete 8 gera PDF sem estourar', () async {
     final f = Ficha.criar();
     f.data['nome'] = 'Mestre da mesa livre';
