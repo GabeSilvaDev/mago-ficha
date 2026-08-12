@@ -16,6 +16,7 @@ class CadernosAba extends StatefulWidget {
 
 class _CadernosAbaState extends State<CadernosAba> {
   String _busca = '';
+  String? _tag;
 
   Future<void> _abrir([Nota? n]) async {
     await Navigator.of(context)
@@ -56,7 +57,10 @@ class _CadernosAbaState extends State<CadernosAba> {
     return ValueListenableBuilder(
       valueListenable: NotaStore.listenable,
       builder: (context, Box<String> box, _) {
-        final notas = NotaStore.buscar(_busca);
+        final tags = NotaStore.tags();
+        // tag pode ter sumido junto com a última nota que a usava
+        if (_tag != null && !tags.contains(_tag)) _tag = null;
+        final notas = NotaStore.buscar(_busca, tag: _tag);
         return Column(
           children: [
             Padding(
@@ -81,6 +85,27 @@ class _CadernosAbaState extends State<CadernosAba> {
                 ],
               ),
             ),
+            if (tags.isNotEmpty)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    for (final t in tags)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FilterChip(
+                          key: ValueKey('tag-$t'),
+                          label: Text(t, style: const TextStyle(fontSize: 12)),
+                          selected: _tag == t,
+                          visualDensity: VisualDensity.compact,
+                          onSelected: (sel) =>
+                              setState(() => _tag = sel ? t : null),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             Expanded(
               child: notas.isEmpty
                   ? const Center(
@@ -101,11 +126,27 @@ class _CadernosAbaState extends State<CadernosAba> {
                         final n = notas[i];
                         return Card(
                           child: ListTile(
-                            title: Text(
-                                n.titulo.isEmpty ? 'Sem título' : n.titulo,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Cores.indigo)),
+                            title: Row(
+                              children: [
+                                if (n.fixada)
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 4),
+                                    child: Icon(Icons.push_pin,
+                                        size: 14, color: Cores.dourado),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                      n.titulo.isEmpty
+                                          ? 'Sem título'
+                                          : n.titulo,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Cores.indigo)),
+                                ),
+                              ],
+                            ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -139,7 +180,21 @@ class _CadernosAbaState extends State<CadernosAba> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (n.imagens.isNotEmpty)
-                                  const Icon(Icons.image_outlined,
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 2),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.image_outlined,
+                                            size: 18, color: Cores.indigoClaro),
+                                        Text('${n.imagens.length}',
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Cores.indigoClaro)),
+                                      ],
+                                    ),
+                                  ),
+                                if (n.fichas.isNotEmpty)
+                                  const Icon(Icons.people_outline,
                                       size: 18, color: Cores.indigoClaro),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline,

@@ -17,12 +17,24 @@ class NotaStore {
 
   static ValueListenable<Box<String>> get listenable => _box.listenable();
 
+  /// Fixadas primeiro (a nota da sessão de hoje fica sempre à mão), depois
+  /// da mais recente para a mais antiga.
   static List<Nota> todas() {
     final lista = _box.values
         .map((s) => Nota.fromJson(jsonDecode(s) as Map<String, dynamic>))
         .toList();
-    lista.sort((a, b) => b.atualizadoEm.compareTo(a.atualizadoEm));
+    lista.sort((a, b) {
+      if (a.fixada != b.fixada) return a.fixada ? -1 : 1;
+      return b.atualizadoEm.compareTo(a.atualizadoEm);
+    });
     return lista;
+  }
+
+  /// Todas as tags em uso, em ordem alfabética — alimenta os chips de filtro.
+  static List<String> tags() {
+    final t = <String>{for (final n in todas()) ...n.tags}.toList();
+    t.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return t;
   }
 
   static Nota? porId(String id) {
@@ -42,15 +54,16 @@ class NotaStore {
   static Future<void> excluir(String id) async => _box.delete(id);
 
   /// Busca em título, texto e tags, ignorando maiúsculas.
-  static List<Nota> buscar(String termo) {
+  /// Com [tag], devolve só as notas que têm exatamente aquela tag.
+  static List<Nota> buscar(String termo, {String? tag}) {
     final t = termo.trim().toLowerCase();
-    if (t.isEmpty) return todas();
-    return todas()
-        .where((n) =>
-            n.titulo.toLowerCase().contains(t) ||
-            n.texto.toLowerCase().contains(t) ||
-            n.tags.any((tag) => tag.toLowerCase().contains(t)))
-        .toList();
+    return todas().where((n) {
+      if (tag != null && tag.isNotEmpty && !n.tags.contains(tag)) return false;
+      if (t.isEmpty) return true;
+      return n.titulo.toLowerCase().contains(t) ||
+          n.texto.toLowerCase().contains(t) ||
+          n.tags.any((tag) => tag.toLowerCase().contains(t));
+    }).toList();
   }
 
   static Set<String> imagensUsadas() => {for (final n in todas()) ...n.imagens};

@@ -261,7 +261,11 @@ Uma segunda aba, do lado da lista de magos:
   só que em modo livre: nenhum limite trava o narrador (Esferas até 10, sem
   cobrar os 6 pontos nem os 15 bônus). NPC é uma `Ficha` normal com um selo, e
   abre na ficha completa, com trackers e PDF, igual a dos jogadores.
-- **Cadernos** — anotações com imagens e tags, com busca em título, texto e tag.
+- **Cadernos** — anotações com imagens, tags e personagens ligados. A imagem
+  **abre em tela cheia** com zoom e deslizar entre elas, cada uma com legenda, e
+  tem um **modo mostrar** que apaga toda a interface: fundo preto e só a imagem,
+  para virar o celular na direção da mesa. A nota da sessão de hoje fica fixada
+  no topo, e as tags viram filtros de um toque.
 
 ## Backup de tudo em um arquivo
 

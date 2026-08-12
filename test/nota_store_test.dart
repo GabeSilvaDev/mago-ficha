@@ -52,6 +52,53 @@ void main() {
     expect(NotaStore.imagensUsadas(), {'a', 'b', 'c'});
   });
 
+  test('legendas e fixada sobrevivem ao roundtrip de json', () {
+    final n = Nota.criar()
+      ..titulo = 'Com anexo'
+      ..imagens.add('img1')
+      ..legendas['img1'] = 'mapa da estação'
+      ..fixada = true;
+    final volta = Nota.fromJson(n.toJson());
+    expect(volta.legendas['img1'], 'mapa da estação');
+    expect(volta.fixada, isTrue);
+
+    // nota antiga, sem os campos novos
+    final antiga = Nota.fromJson({'id': 'x', 'titulo': 'Velha'});
+    expect(antiga.legendas, isEmpty);
+    expect(antiga.fixada, isFalse);
+  });
+
+  test('fixada vai para o topo, mesmo sendo mais antiga', () async {
+    final velhaFixa = Nota.criar()
+      ..titulo = 'Sessão de hoje'
+      ..fixada = true
+      ..atualizadoEm = '2020-01-01T00:00:00.000';
+    final novaSolta = Nota.criar()
+      ..titulo = 'Rascunho'
+      ..atualizadoEm = '2026-01-01T00:00:00.000';
+    await NotaStore.salvar(velhaFixa, tocar: false);
+    await NotaStore.salvar(novaSolta, tocar: false);
+
+    expect(NotaStore.todas().map((n) => n.titulo),
+        ['Sessão de hoje', 'Rascunho']);
+  });
+
+  test('tags: lista sem repetir, em ordem alfabética', () async {
+    await NotaStore.salvar(Nota.criar()..tags.addAll(['nodo', 'sessão']));
+    await NotaStore.salvar(Nota.criar()..tags.addAll(['NPC', 'nodo']));
+    expect(NotaStore.tags(), ['nodo', 'NPC', 'sessão']);
+  });
+
+  test('filtro por tag devolve só quem tem a tag exata', () async {
+    await NotaStore.salvar(Nota.criar()
+      ..titulo = 'Com'
+      ..tags.add('nodo'));
+    await NotaStore.salvar(Nota.criar()..titulo = 'Sem');
+
+    expect(NotaStore.buscar('', tag: 'nodo').map((n) => n.titulo), ['Com']);
+    expect(NotaStore.buscar('', tag: null).length, 2);
+  });
+
   test('ordena da mais recente para a mais antiga', () async {
     final velha = Nota.criar()..titulo = 'Velha';
     velha.atualizadoEm = '2020-01-01T00:00:00.000';
