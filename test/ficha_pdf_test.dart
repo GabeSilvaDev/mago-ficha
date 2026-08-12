@@ -135,6 +135,45 @@ void main() {
     expect(titulos, contains('Combate (continuação)'));
   });
 
+  test('especializações de Esfera e valores acima de 5 saem no anexo',
+      () async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Andarilho';
+    f.setEsfera('correspondence', 7);
+    f.addEspecEsfera('correspondence', 'Teleportes');
+    f.data['arete'] = 8;
+
+    await FichaPdf.gerar(f);
+
+    final titulos = FichaPdf.anexoGerado.map((e) => e.titulo).toList();
+    expect(titulos, contains('Especializações de Esfera'));
+    expect(titulos, contains('Valores acima de cinco'));
+    final vals = FichaPdf.anexoGerado
+        .firstWhere((e) => e.titulo == 'Valores acima de cinco')
+        .texto;
+    expect(vals, contains('Correspondência: 7'));
+    expect(vals, contains('Arete: 8'));
+  });
+
+  test('PDF com anexo tem mais páginas que o sem anexo', () async {
+    final curta = Ficha.criar();
+    curta.data['nome'] = 'Curta';
+    final bytesCurta = await FichaPdf.gerar(curta);
+
+    final longa = Ficha.criar();
+    longa.data['nome'] = 'Longa';
+    longa.data['historia'] = List.filled(
+            200, 'Uma linha inteira de história que não cabe na ficha oficial.')
+        .join(' ');
+    final bytesLonga = await FichaPdf.gerar(longa);
+
+    expect(bytesLonga.length, greaterThan(bytesCurta.length));
+
+    final out = File('build/ficha_test_anexo.pdf');
+    out.createSync(recursive: true);
+    out.writeAsBytesSync(bytesLonga);
+  });
+
   test('ficha com Esfera 7 e Arete 8 gera PDF sem estourar', () async {
     final f = Ficha.criar();
     f.data['nome'] = 'Mestre da mesa livre';
