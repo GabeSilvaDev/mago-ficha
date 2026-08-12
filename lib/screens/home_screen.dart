@@ -10,9 +10,18 @@ import '../theme.dart';
 import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 import 'ficha_view_screen.dart';
+import 'narrador/narrador_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+/// Duas áreas: a lista de magos dos jogadores e a área do narrador.
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _aba = 0;
 
   void _criar(BuildContext context) {
     Navigator.of(context).push(
@@ -136,7 +145,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MAGO: A ASCENSÃO'),
+        title: Text(_aba == 0 ? 'MAGO: A ASCENSÃO' : 'NARRADOR'),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -170,10 +179,34 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ValueListenableBuilder(
+      body: IndexedStack(
+        index: _aba,
+        children: [_abaMagos(context), const NarradorScreen()],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _aba,
+        onDestinationSelected: (i) => setState(() => _aba = i),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.auto_awesome_outlined),
+              selectedIcon: Icon(Icons.auto_awesome),
+              label: 'Magos'),
+          NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book),
+              label: 'Narrador'),
+        ],
+      ),
+    );
+  }
+
+  /// Lista dos magos dos jogadores. NPCs ficam só na galeria do narrador.
+  Widget _abaMagos(BuildContext context) {
+    return ValueListenableBuilder(
         valueListenable: FichaStore.listenable,
         builder: (context, Box<String> box, _) {
-          final fichas = FichaStore.todas();
+          final fichas =
+              FichaStore.todas().where((f) => !f.ehNpc).toList();
           return Column(
             children: [
               const SizedBox(height: 28),
@@ -219,9 +252,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           );
-        },
-      ),
-    );
+        });
   }
 
   Future<void> _confirmarExcluir(BuildContext context, Ficha f) async {
