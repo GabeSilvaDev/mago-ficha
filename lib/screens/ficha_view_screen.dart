@@ -350,6 +350,10 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
     );
   }
 
+  /// A ficha pronta mostra 5 bolinhas; só abre para 10 quando o valor passa
+  /// de 5 (mesa que usa o teto opcional).
+  int _tetoVisual(int v) => v > 5 ? GameData.esferasMaximoLivre : 5;
+
   // ---------- Esferas ----------
   Widget _cardEsferas(Ficha ficha) {
     return Card(
@@ -361,19 +365,43 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             for (final e in GameData.esferas)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (ficha.afinidade == e.chave)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child:
-                            Icon(Icons.star, size: 14, color: Cores.dourado),
-                      ),
-                    Expanded(
-                      child: Text(e.nome,
-                          style: const TextStyle(color: Cores.tinta)),
+                    Row(
+                      children: [
+                        if (ficha.afinidade == e.chave)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 4),
+                            child: Icon(Icons.star,
+                                size: 14, color: Cores.dourado),
+                          ),
+                        Expanded(
+                          child: Text(e.nome,
+                              style: const TextStyle(color: Cores.tinta)),
+                        ),
+                        _pontos(
+                          ficha.esferaFinal(e.chave),
+                          _tetoVisual(ficha.esferaFinal(e.chave)),
+                          tam: ficha.esferaFinal(e.chave) > 5 ? 15 : 22,
+                          espaco: ficha.esferaFinal(e.chave) > 5 ? 2 : 3,
+                        ),
+                      ],
                     ),
-                    _pontos(ficha.esferaFinal(e.chave), 5),
+                    if (ficha.especEsferaDe(e.chave).isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 18, top: 2),
+                        child: Text(
+                          ficha.especEsferaDe(e.chave).join(' · '),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: ficha.especEsferaAtiva(e.chave)
+                                ? Cores.indigo
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -402,7 +430,8 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             const SizedBox(height: 6),
             FittedBox(
                 fit: BoxFit.scaleDown,
-                child: _pontos(ficha.areteFinal, 10, tam: 24, espaco: 5)),
+                child: _pontos(ficha.areteFinal, GameData.areteMaximoLivre,
+                    tam: 24, espaco: 5)),
             const Divider(color: Cores.dourado, height: 20),
             const Text('Força de Vontade',
                 style: TextStyle(
