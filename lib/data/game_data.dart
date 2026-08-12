@@ -111,14 +111,20 @@ class RegraPrioridade {
   List<String> get chaves => prioridades.map((p) => p.chave).toList();
 }
 
-/// Uma Esfera da mágika (chave interna + nome PT + descrição).
+/// Uma Esfera da mágika (chave interna + nome PT + descrição) e as
+/// especialidades sugeridas pelo livro para ela.
 class Esfera {
   final String chave;
   final String nome;
   final String descricao;
-  Esfera(this.chave, this.nome, this.descricao);
+  final List<String> especialidades;
+  Esfera(this.chave, this.nome, this.descricao, this.especialidades);
   factory Esfera.fromJson(Map<String, dynamic> j) => Esfera(
-      j['chave'] as String, j['nome'] as String, (j['descricao'] ?? '') as String);
+        j['chave'] as String,
+        j['nome'] as String,
+        (j['descricao'] ?? '') as String,
+        List<String>.from(j['especialidades'] ?? const <String>[]),
+      );
 }
 
 /// Bloco de traços = categorias + regra de prioridade (atributos OU habilidades).
@@ -279,6 +285,9 @@ class GameData {
   static late List<Esfera> esferas;
   static late int esferasPontosGratuitos;
   static late int esferasMaximoCriacao;
+  static late int esferasMaximo; // teto de uma Esfera na ficha pronta
+  static late int esferasMaximoLivre; // teto no modo livre (mesa opcional)
+  static late String especializacoesEsferaTexto;
   static late int areteInicial;
   static late int forcaVontadeInicial;
   static late int paradoxoInicial;
@@ -298,6 +307,8 @@ class GameData {
   static late Map<String, int> _custosBonus;
   static late int quintessenciaPacote;
   static late int areteMaximoCriacao;
+  static late int areteMaximo;
+  static late int areteMaximoLivre;
   static late int forcaVontadeMaxima;
   static late String bonusTexto;
 
@@ -346,6 +357,10 @@ class GameData {
     final rc = (esf['regra_criacao'] ?? {}) as Map<String, dynamic>;
     esferasPontosGratuitos = (rc['pontos_gratuitos'] as num?)?.toInt() ?? 9;
     esferasMaximoCriacao = (rc['maximo_criacao'] as num?)?.toInt() ?? 3;
+    esferasMaximo = (rc['maximo'] as num?)?.toInt() ?? 5;
+    esferasMaximoLivre = (rc['maximo_livre'] as num?)?.toInt() ?? 10;
+    especializacoesEsferaTexto =
+        (esf['especializacoes_texto'] ?? '') as String;
     areteInicial = (rc['arete_inicial'] as num?)?.toInt() ?? 1;
     forcaVontadeInicial = (rc['forca_vontade_inicial'] as num?)?.toInt() ?? 5;
     paradoxoInicial = (rc['paradoxo_inicial'] as num?)?.toInt() ?? 0;
@@ -383,6 +398,8 @@ class GameData {
         .map((k, v) => MapEntry(k as String, (v as num).toInt()));
     quintessenciaPacote = (bon['quintessencia_pacote'] as num?)?.toInt() ?? 4;
     areteMaximoCriacao = (bon['arete_maximo_criacao'] as num?)?.toInt() ?? 3;
+    areteMaximo = (bon['arete_maximo'] as num?)?.toInt() ?? 5;
+    areteMaximoLivre = (bon['arete_maximo_livre'] as num?)?.toInt() ?? 10;
     forcaVontadeMaxima = (bon['forca_vontade_maxima'] as num?)?.toInt() ?? 10;
     bonusTexto = (bon['texto'] ?? '') as String;
   }
@@ -439,6 +456,12 @@ class GameData {
     if (e['custom'] == true) return sel;
     return defeitoPorNome(e['nome'] as String?)?.custoSpec.custo(sel) ?? 0;
   }
+
+  /// Teto de uma Esfera: 5 na regra padrão, 10 na mesa que joga em modo livre.
+  static int esferasMax(bool livre) => livre ? esferasMaximoLivre : esferasMaximo;
+
+  /// Teto do Arete, mesma lógica das Esferas.
+  static int areteMax(bool livre) => livre ? areteMaximoLivre : areteMaximo;
 
   static List<String> get chavesEsferas =>
       esferas.map((e) => e.chave).toList();
