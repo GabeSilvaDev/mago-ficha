@@ -82,6 +82,16 @@ class Ficha {
     });
   }
 
+  /// NPC do narrador: mesma estrutura da ficha de jogador, marcada no `tipo`.
+  /// Assim ele entra na galeria, no retrato, no backup e no PDF sem código
+  /// duplicado — o que muda é só o caminho de criação (formulário curto).
+  factory Ficha.criarNpc() {
+    final f = Ficha.criar();
+    f.data['tipo'] = 'npc';
+    f.data['modoLivre'] = true; // NPC não passa pelo orçamento da criação
+    return f;
+  }
+
   static Map<String, dynamic> _valoresIniciais(BlocoTracos b) =>
       {for (final n in b.nomes) n: b.regra.valorInicial};
 
@@ -145,6 +155,26 @@ class Ficha {
   }
 
   bool get temRetrato => retratoId != null;
+
+  /// 'pc' (padrão) ou 'npc'.
+  String get tipo => (data['tipo'] as String?) ?? 'pc';
+  bool get ehNpc => tipo == 'npc';
+
+  /// Valores dos campos customizados do narrador, por id do campo.
+  Map<String, dynamic> get campos {
+    if (data['campos'] is! Map) data['campos'] = <String, dynamic>{};
+    return (data['campos'] as Map).cast<String, dynamic>();
+  }
+
+  dynamic campo(String id) => campos[id];
+
+  void setCampo(String id, dynamic valor) {
+    if (valor == null || (valor is String && valor.trim().isEmpty)) {
+      campos.remove(id);
+    } else {
+      campos[id] = valor;
+    }
+  }
 
   /// Afiliação + Facção sem repetição, para mostrar em lista/cabeçalho.
   /// Afiliações sem subdivisão (Nefandi, Órfão…) repetiam o mesmo nome duas

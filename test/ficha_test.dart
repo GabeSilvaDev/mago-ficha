@@ -268,6 +268,33 @@ void main() {
     expect(f.especEsferaAtiva('forces'), isTrue);
   });
 
+  test('ficha nova é PC; NPC é marcado no tipo', () {
+    expect(Ficha.criar().ehNpc, isFalse);
+    expect(Ficha.criar().tipo, 'pc');
+    final npc = Ficha.criarNpc();
+    expect(npc.ehNpc, isTrue);
+    expect(npc.tipo, 'npc');
+    expect(npc.id, isNotEmpty);
+    expect(npc.modoLivre, isTrue);
+  });
+
+  test('ficha antiga sem tipo entra como PC', () {
+    expect(Ficha({'id': 'x'}).ehNpc, isFalse);
+  });
+
+  test('campos customizados: grava, lê e apaga', () {
+    final f = Ficha.criar();
+    expect(f.campos, isEmpty);
+    f.setCampo('c1', 'Vivo');
+    f.setCampo('c2', 4);
+    expect(f.campo('c1'), 'Vivo');
+    expect(f.campo('c2'), 4);
+    f.setCampo('c1', null);
+    expect(f.campo('c1'), isNull);
+    f.setCampo('c2', '');
+    expect(f.campos, isEmpty);
+  });
+
   test('retratoId: ausente é null e aceita atribuição', () {
     final f = Ficha.criar();
     expect(f.retratoId, isNull);
