@@ -202,6 +202,33 @@ void main() {
     out.writeAsBytesSync(bytes);
   });
 
+  test('paraFonte troca o que a Helvetica nao encodifica', () {
+    expect(FichaPdf.paraFonte('PING \u2014 Corr'), 'PING - Corr');
+    expect(FichaPdf.paraFonte('PING\u2026'), 'PING...');
+    expect(FichaPdf.paraFonte('\u201CPING\u201D'), '"PING"');
+    expect(FichaPdf.paraFonte('l\u2019Arte'), "l'Arte");
+    expect(FichaPdf.paraFonte('\u2022 PING'), '- PING');
+    expect(FichaPdf.paraFonte('PING \u2192 Corr'), 'PING -> Corr');
+    expect(FichaPdf.paraFonte('PING \u{1F52E}'), 'PING ?'); // emoji
+    // acento do portugues esta no Latin-1 e nao pode ser mexido
+    expect(FichaPdf.paraFonte('Variações básicas: ç ã é ô ü'),
+        'Variações básicas: ç ã é ô ü');
+    // quebra de linha sobrevive (o anexo depende dela)
+    expect(FichaPdf.paraFonte('a\nb'), 'a\nb');
+  });
+
+  test('texto com pontuacao de celular nao derruba a exportacao', () async {
+    // caso real: aspas curvas, travessao e reticencias que o teclado insere
+    final f = Ficha.criar();
+    f.data['nome'] = 'Cotoia \u2014 “a Andarilha”';
+    f.data['focos'] = 'Variações básicas: PING (Corr 1) \u2192 “sentir” o alvo\u2026';
+    f.data['rotinas'] = '\u2022 Ritual ao amanhecer\n\u2022 Diário \u2013 sempre';
+    f.data['historia'] = 'Ela dizia: \u2018não há distância\u2019 \u{1F52E}';
+
+    final bytes = await FichaPdf.gerar(f);
+    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+  });
+
   test('ficha com Esfera 7 e Arete 8 gera PDF sem estourar', () async {
     final f = Ficha.criar();
     f.data['nome'] = 'Mestre da mesa livre';

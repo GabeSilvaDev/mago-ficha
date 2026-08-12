@@ -2,7 +2,7 @@ name: mago_a_ascensao
 description: "Ficha de personagem offline de Mago: A Ascensão (Edição 20º Aniversário)."
 publish_to: 'none'
 
-version: 1.2.0+3
+version: 1.2.1+4
 
 environment:
   sdk: ^3.12.0

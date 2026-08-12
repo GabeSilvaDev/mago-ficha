@@ -27,6 +27,42 @@ class FichaPdf {
 
   static const _tinta = PdfColor.fromInt(0xFF191434);
 
+  /// Helvetica do `dart_pdf` só codifica Latin-1 e **lança exceção** em
+  /// qualquer caractere fora disso — aspas curvas, travessão e reticências,
+  /// que o teclado do celular insere sozinho, derrubavam a exportação inteira.
+  /// Aqui viram o equivalente ASCII; o que não tem equivalente vira '?', para
+  /// o PDF sair sempre em vez de falhar.
+  static String paraFonte(String t) {
+    const trocas = {
+      '\u2014': '-', // travessão
+      '\u2013': '-', // meia-risca
+      '\u2212': '-', // sinal de menos
+      '\u2026': '...', // reticências
+      '\u201C': '"', '\u201D': '"', '\u201E': '"', // aspas curvas duplas
+      '\u00AB': '"', '\u00BB': '"',
+      '\u2018': "'", '\u2019': "'", '\u201A': "'", // aspas curvas simples
+      '\u2022': '-', '\u25AA': '-', '\u25CF': '-', // marcadores
+      '\u2192': '->', '\u2190': '<-', '\u21D2': '=>',
+      '\u00A0': ' ', // espaço que não quebra
+      '\u2009': ' ', '\u200B': '', // espaços finos/zero
+      '\u2713': 'v', '\u2717': 'x',
+    };
+    final b = StringBuffer();
+    for (final r in t.runes) {
+      final c = String.fromCharCode(r);
+      final troca = trocas[c];
+      if (troca != null) {
+        b.write(troca);
+      } else if (r == 10 || r == 13 || (r >= 0x20 && r <= 0x7E) ||
+          (r >= 0xA0 && r <= 0xFF)) {
+        b.write(c);
+      } else {
+        b.write('?'); // fora do Latin-1 (emoji, símbolos): não some em silêncio
+      }
+    }
+    return b.toString();
+  }
+
   /// Blocos que não couberam na ficha oficial na última geração.
   /// Reiniciada no começo de `gerar()`; também usada nos testes.
   static final List<ItemAnexo> anexoGerado = [];
@@ -108,7 +144,7 @@ class FichaPdf {
           bool direita = false,
           double? maxPx}) {
         if (t.isEmpty) return;
-        var txt = t;
+        var txt = paraFonte(t);
         if (maxPx != null) {
           while (txt.isNotEmpty && larguraTexto(fonte, txt, tam) > maxPx * s) {
             txt = txt.substring(0, txt.length - 1);
@@ -122,7 +158,7 @@ class FichaPdf {
       }
 
       List<String> quebra(PdfFont fonte, String t, double largPx, double tam) {
-        final palavras = t.split(RegExp(r'\s+'));
+        final palavras = paraFonte(t).split(RegExp(r'\s+'));
         final linhas = <String>[];
         var cur = '';
         for (final p in palavras) {
@@ -507,7 +543,8 @@ class FichaPdf {
           margin: const pw.EdgeInsets.fromLTRB(40, 40, 40, 40),
           build: (ctx) => [
             pw.Text(
-              'Anexo - ${f.nome.isEmpty ? 'ficha sem nome' : f.nome}',
+              paraFonte(
+                  'Anexo - ${f.nome.isEmpty ? 'ficha sem nome' : f.nome}'),
               style: pw.TextStyle(font: negrito, fontSize: 15, color: _tinta),
             ),
             pw.SizedBox(height: 4),
@@ -528,14 +565,14 @@ class FichaPdf {
             ],
             for (final item in anexo) ...[
               pw.SizedBox(height: 8),
-              pw.Text(item.titulo,
+              pw.Text(paraFonte(item.titulo),
                   style:
                       pw.TextStyle(font: negrito, fontSize: 11, color: _tinta)),
               pw.SizedBox(height: 3),
               // Paragraph (e não Text) porque um bloco pode passar de uma
               // página inteira e precisa quebrar entre elas.
               pw.Paragraph(
-                text: item.texto,
+                text: paraFonte(item.texto),
                 style: pw.TextStyle(font: helv, fontSize: 9.5, color: _tinta),
                 textAlign: pw.TextAlign.left,
                 margin: pw.EdgeInsets.zero,
