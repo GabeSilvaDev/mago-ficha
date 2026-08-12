@@ -22,9 +22,16 @@ class LinhaBolinhas extends StatelessWidget {
     this.maxInterativo,
   });
 
+  /// Bolinha encolhe quando a fileira passa de 5: dez bolinhas de 20px não
+  /// cabem na linha de um celular junto do nome do traço.
+  static double tamanhoDe(int max) => max > 5 ? 14 : 20;
+  static double espacoDe(int max) => max > 5 ? 1 : 2;
+
   @override
   Widget build(BuildContext context) {
     final teto = maxInterativo ?? max;
+    final tam = tamanhoDe(max);
+    final espaco = espacoDe(max);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -38,10 +45,10 @@ class LinhaBolinhas extends StatelessWidget {
                     onChanged(novo.clamp(min, teto));
                   },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: espaco, vertical: 4),
               child: Container(
-                width: 20,
-                height: 20,
+                width: tam,
+                height: tam,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: i <= valor ? Cores.indigo : Colors.transparent,
