@@ -5,6 +5,7 @@ import 'package:mago_a_ascensao/data/game_data.dart';
 import 'package:mago_a_ascensao/models/ficha.dart';
 import 'package:mago_a_ascensao/screens/ficha_view_screen.dart';
 import 'package:mago_a_ascensao/store/ficha_store.dart';
+import 'package:mago_a_ascensao/store/narrador_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,7 @@ void main() {
     await GameData.carregar();
     Hive.init('build/test-hive-view');
     await Hive.openBox<String>(FichaStore.boxName);
+    await NarradorStore.init();
   });
 
   // A ficha é gravada FORA do `testWidgets`: escrita de disco não completa

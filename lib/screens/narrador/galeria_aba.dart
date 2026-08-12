@@ -8,9 +8,9 @@ import '../../store/narrador_store.dart';
 import '../../theme.dart';
 import '../../widgets/retrato.dart';
 import '../ficha_view_screen.dart';
+import '../wizard_screen.dart';
 import 'campos_config_screen.dart';
 import 'galeria_ordem.dart';
-import 'npc_screen.dart';
 
 /// Galeria de personagens: cards com retrato e os campos que o narrador
 /// escolheu mostrar, com filtro por tipo e ordenação por característica.
@@ -95,11 +95,14 @@ class _GaleriaAbaState extends State<GaleriaAba> {
                     onPressed: () => setState(() => _crescente = !_crescente),
                   ),
                   IconButton(
-                    tooltip: 'Novo NPC',
+                    tooltip: 'Novo NPC (ficha completa, modo livre)',
                     icon: const Icon(Icons.person_add_alt),
                     onPressed: () async {
-                      await Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const NpcScreen()));
+                      // mesmo passo a passo do jogador; `criarNpc` já entra em
+                      // modo livre, então nenhum limite trava o narrador
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) =>
+                              WizardScreen(inicial: Ficha.criarNpc())));
                       if (mounted) setState(() {});
                     },
                   ),
@@ -153,11 +156,9 @@ class _GaleriaAbaState extends State<GaleriaAba> {
     return Card(
       child: InkWell(
         onTap: () async {
+          // NPC é uma ficha normal: abre a mesma tela do personagem de jogador
           await Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => f.ehNpc
-                ? NpcScreen(existente: f)
-                : FichaViewScreen(fichaId: f.id),
-          ));
+              builder: (_) => FichaViewScreen(fichaId: f.id)));
           if (mounted) setState(() {});
         },
         child: Padding(

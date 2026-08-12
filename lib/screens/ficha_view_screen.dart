@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import '../data/game_data.dart';
+import '../models/campo_narrador.dart';
 import '../models/ficha.dart';
 import '../services/ficha_pdf.dart';
 import '../store/ficha_store.dart';
+import '../store/narrador_store.dart';
 import '../theme.dart';
 import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
@@ -145,6 +147,10 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             aba([
               FaixaSecao('Identidade', onEditar: () => _editarPasso(0)),
               _cardIdentidade(ficha),
+              if (NarradorStore.campos().isNotEmpty) ...[
+                const FaixaSecao('Campos do narrador'),
+                _cardCamposNarrador(ficha),
+              ],
             ]),
             // 2 — Status (trackers de jogo)
             aba([
@@ -251,6 +257,78 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Campos customizados criados na área do narrador. Os do tipo `derivado`
+  /// só mostram (leem a própria ficha); o resto é editável aqui mesmo e salva
+  /// na hora, como os outros trackers.
+  Widget _cardCamposNarrador(Ficha ficha) {
+    final campos = NarradorStore.campos();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final c in campos) _linhaCampo(ficha, c),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _linhaCampo(Ficha ficha, CampoNarrador c) {
+    Widget valor;
+    switch (c.tipo) {
+      case TipoCampo.derivado:
+        valor = Text(c.textoDe(ficha).isEmpty ? '—' : c.textoDe(ficha),
+            style: const TextStyle(fontWeight: FontWeight.bold));
+        break;
+      case TipoCampo.tag:
+        valor = DropdownButton<String>(
+          value: c.opcoes.contains(ficha.campo(c.id))
+              ? ficha.campo(c.id) as String
+              : '',
+          underline: const SizedBox.shrink(),
+          items: [
+            const DropdownMenuItem(value: '', child: Text('—')),
+            for (final o in c.opcoes)
+              DropdownMenuItem(value: o, child: Text(o)),
+          ],
+          onChanged: (v) {
+            ficha.setCampo(c.id, v);
+            _salvarQuieto();
+          },
+        );
+        break;
+      default:
+        valor = SizedBox(
+          width: 170,
+          child: TextFormField(
+            initialValue: '${ficha.campo(c.id) ?? ''}',
+            textAlign: TextAlign.end,
+            keyboardType:
+                c.tipo == TipoCampo.numero ? TextInputType.number : null,
+            decoration: const InputDecoration(isDense: true),
+            onChanged: (v) => ficha.setCampo(
+                c.id, c.tipo == TipoCampo.numero ? int.tryParse(v.trim()) : v),
+            onEditingComplete: _salvarQuieto,
+            onTapOutside: (_) => _salvarQuieto(),
+          ),
+        );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+              child: Text(c.nome,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Cores.indigo))),
+          valor,
+        ],
       ),
     );
   }

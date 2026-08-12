@@ -24,6 +24,11 @@ class WizardScreen extends StatefulWidget {
   /// Se vier uma ficha, edita; senão cria uma nova.
   final Ficha? existente;
 
+  /// Ficha nova já montada para ser criada (ex.: `Ficha.criarNpc()`).
+  /// Continua sendo CRIAÇÃO — passo a passo sequencial —, só que partindo
+  /// dessa ficha em vez de uma em branco. Ignorado se vier [existente].
+  final Ficha? inicial;
+
   /// Índices das etapas desta sessão (null = todas, na ordem).
   final List<int>? passos;
 
@@ -41,6 +46,7 @@ class WizardScreen extends StatefulWidget {
   const WizardScreen({
     super.key,
     this.existente,
+    this.inicial,
     this.passos,
     this.secoes,
     this.titulo,
@@ -106,7 +112,7 @@ class _WizardScreenState extends State<WizardScreen>
   @override
   void initState() {
     super.initState();
-    f = widget.existente ?? Ficha.criar();
+    f = widget.existente ?? widget.inicial ?? Ficha.criar();
     // Os 15 pontos de bônus (e o resto dos limites) são regra da CRIAÇÃO.
     // Editando uma ficha pronta nada trava — nem que o ⚙ dela tenha ficado
     // em "Iniciante" durante a criação. Criando, vale o modo gravado.
@@ -149,7 +155,9 @@ class _WizardScreenState extends State<WizardScreen>
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(_parcial ? 'Alterações salvas!' : 'Ficha salva!')),
+          content: Text(_parcial
+              ? 'Alterações salvas!'
+              : (f.ehNpc ? 'NPC salvo!' : 'Ficha salva!'))),
     );
   }
 
@@ -164,7 +172,8 @@ class _WizardScreenState extends State<WizardScreen>
                     : 'Editar ${idx + 1}/${_passos.length} · ${_titulos[page]}')
                 : (_comAbas
                     ? _titulos[page]
-                    : '${idx + 1}/${_passos.length} · ${_titulos[page]}'),
+                    : '${f.ehNpc ? 'NPC · ' : ''}'
+                        '${idx + 1}/${_passos.length} · ${_titulos[page]}'),
             style: const TextStyle(fontSize: 16)),
         actions: [
           // Editando um pedaço da ficha não há regra de criação pra escolher.

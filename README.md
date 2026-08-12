@@ -255,10 +255,12 @@ Uma segunda aba, do lado da lista de magos:
 - **Campos customizados** — o narrador cria os campos que quiser (texto, número
   ou etiqueta). Os do tipo *lido da ficha* (Arete, Afiliação, Vitalidade…) não
   são preenchidos à mão: servem para ordenar e filtrar direto pelos valores que
-  já estão na ficha.
-- **NPCs** — formulário curto com retrato, conceito e traços livres. Por baixo é
-  a mesma `Ficha` dos jogadores, então dá para promover um NPC ao criador
-  completo quando ele crescer.
+  já estão na ficha. Os demais são preenchidos na própria ficha, na aba
+  Personagem — vale para jogadores e NPCs.
+- **NPCs** — o botão ➕ abre o **mesmo passo a passo do personagem de jogador**,
+  só que em modo livre: nenhum limite trava o narrador (Esferas até 10, sem
+  cobrar os 6 pontos nem os 15 bônus). NPC é uma `Ficha` normal com um selo, e
+  abre na ficha completa, com trackers e PDF, igual a dos jogadores.
 - **Cadernos** — anotações com imagens e tags, com busca em título, texto e tag.
 
 ## Backup de tudo em um arquivo
@@ -314,7 +316,7 @@ lib/
 │   ├── home_screen.dart       # abas Magos / Narrador, importar e exportar
 │   ├── wizard_screen.dart     # os 7 passos — criação E edição
 │   ├── ficha_view_screen.dart # as 6 abas + trackers de jogo
-│   └── narrador/              # galeria, cadernos, campos e NPC
+│   └── narrador/              # galeria, cadernos e campos customizados
 ├── services/
 │   ├── ficha_io.dart          # export/import .json
 │   ├── backup_io.dart         # backup .zip de tudo
