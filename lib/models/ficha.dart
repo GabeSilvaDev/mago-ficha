@@ -253,7 +253,7 @@ class Ficha {
   String get afinidade => _s('afinidade');
   set afinidade(String v) => data['afinidade'] = v;
 
-  /// Especializações de Esfera: {esfera: <chave>, nome: <String>}.
+  /// Especializações de Esfera: `{esfera: <chave>, nome: <String>}`.
   /// O livro permite escolher antes da graduação 4; o bônus (cada 10 conta
   /// como dois sucessos) só passa a valer quando a Esfera chega em 4.
   List<Map<String, dynamic>> get especializacoesEsferas =>

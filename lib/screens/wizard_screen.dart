@@ -1384,48 +1384,150 @@ class _WizardScreenState extends State<WizardScreen>
   Widget _linhaEsfera(Esfera e, int teto, String? afin, bool bloqueada) {
     final v = f.esfera(e.chave);
     final ehAfin = afin == e.chave;
+    final maxBolinhas = GameData.esferasMax(_livre);
+    final specs = f.especEsferaDe(e.chave);
+    final ativa = f.especEsferaAtiva(e.chave);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 18,
-            child: ehAfin
-                ? const Icon(Icons.star, size: 16, color: Cores.dourado)
-                : (bloqueada
-                    ? const Icon(Icons.block, size: 15, color: Colors.grey)
-                    : null),
+          Row(
+            children: [
+              SizedBox(
+                width: 18,
+                child: ehAfin
+                    ? const Icon(Icons.star, size: 16, color: Cores.dourado)
+                    : (bloqueada
+                        ? const Icon(Icons.block, size: 15, color: Colors.grey)
+                        : null),
+              ),
+              Expanded(
+                child: _dica(
+                  '${e.nome} — ${e.descricao}'
+                  '${bloqueada ? '\n\n⚠ Bloqueada para a sua Facção.' : ''}',
+                  Text(e.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: bloqueada ? Colors.grey : Cores.tinta)),
+                ),
+              ),
+              LinhaBolinhas(
+                valor: v,
+                max: maxBolinhas,
+                min: ehAfin ? 1 : 0,
+                // Evolução: sem teto de iniciante (e Esfera bloqueada só avisa).
+                maxInterativo:
+                    _livre ? maxBolinhas : (bloqueada ? 0 : teto),
+                onChanged: (nv) => setState(() => f.setEsfera(e.chave, nv)),
+              ),
+              SizedBox(
+                width: 20,
+                child: Text('$v',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-          Expanded(
-            child: _dica(
-              '${e.nome} — ${e.descricao}'
-              '${bloqueada ? '\n\n⚠ Bloqueada para a sua Facção.' : ''}',
-              Text(e.nome,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: bloqueada ? Colors.grey : Cores.tinta)),
+          Padding(
+            padding: const EdgeInsets.only(left: 18, bottom: 2),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (final s in specs)
+                  InputChip(
+                    label: Text(s, style: const TextStyle(fontSize: 12)),
+                    labelStyle: TextStyle(
+                        color: ativa ? Cores.tinta : Colors.grey.shade600),
+                    backgroundColor: Cores.pergaminhoEscuro,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onDeleted: () =>
+                        setState(() => f.removerEspecEsfera(e.chave, s)),
+                  ),
+                if (!bloqueada && (specs.isEmpty || _livre))
+                  ActionChip(
+                    key: ValueKey('espec-${e.chave}'),
+                    avatar: const Icon(Icons.add, size: 14),
+                    label: const Text('especialização',
+                        style: TextStyle(fontSize: 12)),
+                    backgroundColor: Cores.pergaminhoEscuro,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onPressed: () => _escolherEspecEsfera(e),
+                  ),
+                if (specs.isNotEmpty && !ativa)
+                  Text('sem efeito até a Esfera chegar em 4',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey.shade600)),
+              ],
             ),
-          ),
-          LinhaBolinhas(
-            valor: v,
-            max: 5,
-            min: ehAfin ? 1 : 0,
-            // Evolução: sem teto de iniciante (e Esfera bloqueada só avisa).
-            maxInterativo: _livre ? 5 : (bloqueada ? 0 : teto),
-            onChanged: (nv) => setState(() => f.setEsfera(e.chave, nv)),
-          ),
-          SizedBox(
-            width: 20,
-            child: Text('$v',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  /// Seletor da especialização: a lista do livro mais "Outra…" (texto livre).
+  Future<void> _escolherEspecEsfera(Esfera e) async {
+    final jaTem = f.especEsferaDe(e.chave);
+    final escolha = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: Cores.pergaminho,
+        title: Text('Especialização — ${e.nome}'),
+        children: [
+          for (final s in e.especialidades)
+            if (!jaTem.contains(s))
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, s),
+                child: Text(s),
+              ),
+          const Divider(color: Cores.dourado),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, '__outra__'),
+            child: const Text('Outra…',
+                style: TextStyle(fontStyle: FontStyle.italic)),
+          ),
+        ],
+      ),
+    );
+    if (escolha == null || !mounted) return;
+    var nome = escolha;
+    if (escolha == '__outra__') {
+      final ctrl = TextEditingController();
+      final digitado = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Cores.pergaminho,
+          title: Text('Especialização — ${e.nome}'),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration:
+                const InputDecoration(hintText: 'Ex.: Teleporte curto'),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, ctrl.text),
+                child: const Text('Adicionar')),
+          ],
+        ),
+      );
+      if (digitado == null || digitado.trim().isEmpty || !mounted) return;
+      nome = digitado;
+    }
+    setState(() => f.addEspecEsfera(e.chave, nome));
   }
 
   Widget _linhaBase(String label, String valor) {
@@ -2512,7 +2614,7 @@ class _WizardScreenState extends State<WizardScreen>
                       base: f.esfera(e.chave),
                       bonusV: f.bonusEsfera(e.chave),
                       maxFinal: GameData.esferasMaximoCriacao,
-                      maxFinalLivre: 5,
+                      maxFinalLivre: GameData.esferasMaximoLivre,
                       custoUnit: GameData.custoBonus('esfera'),
                       setB: (v) => f.setBonusEsfera(e.chave, v),
                       desabilitado: bloqueadas.contains(e.chave),
@@ -2545,7 +2647,7 @@ class _WizardScreenState extends State<WizardScreen>
                       base: f.arete,
                       bonusV: f.bonusArete,
                       maxFinal: GameData.areteMaximoCriacao,
-                      maxFinalLivre: 10,
+                      maxFinalLivre: GameData.areteMaximoLivre,
                       custoUnit: GameData.custoBonus('arete'),
                       setB: (v) => f.bonusArete = v,
                     ),

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mago_a_ascensao/data/game_data.dart';
 import 'package:mago_a_ascensao/models/ficha.dart';
 import 'package:mago_a_ascensao/screens/wizard_screen.dart';
+import 'package:mago_a_ascensao/widgets/dots.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -184,5 +185,42 @@ void main() {
 
     expect(find.text('Já existe uma Habilidade com esse nome.'), findsOneWidget);
     expect(f.habilidadesExtras, isEmpty);
+  });
+
+  testWidgets('modo livre desenha 10 bolinhas por Esfera', (t) async {
+    final f = Ficha.criar();
+    f.modoLivre = true;
+    await abrir(t, WizardScreen(existente: f, passos: const [3]));
+
+    final linhas = t.widgetList<LinhaBolinhas>(find.byType(LinhaBolinhas));
+    expect(linhas.where((l) => l.max == 10).length, greaterThanOrEqualTo(9));
+  });
+
+  testWidgets('criação mantém 5 bolinhas por Esfera', (t) async {
+    // sem `existente` o wizard entra em modo criação, onde vale o teto padrão
+    await abrir(t, const WizardScreen(passos: [3]));
+
+    final linhas = t.widgetList<LinhaBolinhas>(find.byType(LinhaBolinhas));
+    expect(linhas, isNotEmpty);
+    expect(linhas.every((l) => l.max <= 5), isTrue);
+  });
+
+  testWidgets('chip de especialização aparece e grava na ficha', (t) async {
+    final f = Ficha.criar();
+    f.modoLivre = true;
+    f.setEsfera('correspondence', 4);
+    await abrir(t, WizardScreen(existente: f, passos: const [3]));
+
+    final chip = find.byKey(const ValueKey('espec-correspondence'));
+    await t.ensureVisible(chip);
+    await t.pumpAndSettle();
+    await t.tap(chip);
+    await t.pumpAndSettle();
+
+    await t.tap(find.text('Teleportes'));
+    await t.pumpAndSettle();
+
+    expect(f.especEsferaDe('correspondence'), ['Teleportes']);
+    expect(find.text('Teleportes'), findsOneWidget);
   });
 }
