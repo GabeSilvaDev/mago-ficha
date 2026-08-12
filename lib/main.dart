@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'data/game_data.dart';
 import 'store/ficha_store.dart';
 import 'store/imagem_store.dart';
+import 'store/narrador_store.dart';
+import 'store/nota_store.dart';
 import 'theme.dart';
 import 'screens/home_screen.dart';
 
@@ -10,8 +12,12 @@ Future<void> main() async {
   await GameData.carregar();
   await FichaStore.init();
   await ImagemStore.init();
-  // imagem de ficha apagada não fica ocupando espaço para sempre
-  await FichaStore.limparImagensOrfas();
+  await NarradorStore.init();
+  await NotaStore.init();
+  // imagem que ninguém mais referencia (ficha ou caderno apagado) não fica
+  // ocupando espaço para sempre
+  await ImagemStore.limpar(
+      {...FichaStore.imagensUsadas(), ...NotaStore.imagensUsadas()});
   runApp(const AppMagoAscensao());
 }
 
