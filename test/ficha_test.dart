@@ -237,4 +237,40 @@ void main() {
     f.experiencia = -3;
     expect(f.experiencia, 0);
   });
+
+  test('especialização de Esfera: adiciona, lista e remove', () {
+    final f = Ficha.criar();
+    f.addEspecEsfera('correspondence', 'Teleportes');
+    f.addEspecEsfera('correspondence', 'Portais');
+    f.addEspecEsfera('entropy', 'Fortuna');
+    expect(f.especEsferaDe('correspondence'), ['Teleportes', 'Portais']);
+    expect(f.especEsferaDe('entropy'), ['Fortuna']);
+    expect(f.especEsferaDe('time'), isEmpty);
+
+    f.removerEspecEsfera('correspondence', 'Portais');
+    expect(f.especEsferaDe('correspondence'), ['Teleportes']);
+  });
+
+  test('especialização de Esfera não duplica nem aceita vazio', () {
+    final f = Ficha.criar();
+    f.addEspecEsfera('life', 'Cura');
+    f.addEspecEsfera('life', 'Cura');
+    f.addEspecEsfera('life', '   ');
+    expect(f.especEsferaDe('life'), ['Cura']);
+  });
+
+  test('especialização de Esfera só fica ativa a partir de 4', () {
+    final f = Ficha.criar();
+    f.addEspecEsfera('forces', 'Clima');
+    f.setEsfera('forces', 3);
+    expect(f.especEsferaAtiva('forces'), isFalse);
+    f.setBonusEsfera('forces', 1); // final = 4
+    expect(f.especEsferaAtiva('forces'), isTrue);
+  });
+
+  test('ficha antiga sem o campo abre com lista vazia', () {
+    final f = Ficha({'id': 'x', 'nome': 'Antigo'});
+    expect(f.especializacoesEsferas, isEmpty);
+    expect(f.especEsferaDe('mind'), isEmpty);
+  });
 }

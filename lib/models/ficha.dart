@@ -42,6 +42,8 @@ class Ficha {
       // ---- 4: Esferas + vantagens-base ----
       'esferas': {for (final c in GameData.chavesEsferas) c: 0},
       'afinidade': '',
+      // Especializações de Esfera (livro: escolhe quando quiser, só vale em 4)
+      'especializacoesEsferas': <Map<String, dynamic>>[], // {esfera, nome}
       'arete': GameData.areteInicial,
       'forcaVontade': GameData.forcaVontadeInicial,
       'paradoxo': GameData.paradoxoInicial,
@@ -250,6 +252,29 @@ class Ficha {
 
   String get afinidade => _s('afinidade');
   set afinidade(String v) => data['afinidade'] = v;
+
+  /// Especializações de Esfera: {esfera: <chave>, nome: <String>}.
+  /// O livro permite escolher antes da graduação 4; o bônus (cada 10 conta
+  /// como dois sucessos) só passa a valer quando a Esfera chega em 4.
+  List<Map<String, dynamic>> get especializacoesEsferas =>
+      _lista('especializacoesEsferas');
+
+  List<String> especEsferaDe(String chave) => [
+        for (final e in especializacoesEsferas)
+          if (e['esfera'] == chave) '${e['nome']}',
+      ];
+
+  void addEspecEsfera(String chave, String nome) {
+    final n = nome.trim();
+    if (n.isEmpty || especEsferaDe(chave).contains(n)) return;
+    adicionar('especializacoesEsferas', {'esfera': chave, 'nome': n});
+  }
+
+  void removerEspecEsfera(String chave, String nome) => especializacoesEsferas
+      .removeWhere((e) => e['esfera'] == chave && e['nome'] == nome);
+
+  /// A especialização já dá bônus nesta Esfera?
+  bool especEsferaAtiva(String chave) => esferaFinal(chave) >= 4;
 
   int get arete => _i('arete', GameData.areteInicial);
   int get forcaVontade => _i('forcaVontade', GameData.forcaVontadeInicial);
