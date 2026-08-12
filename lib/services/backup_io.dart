@@ -5,8 +5,13 @@ import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../models/campo_narrador.dart';
 import '../models/ficha.dart';
+import '../models/nota.dart';
 import '../store/ficha_store.dart';
+import '../store/imagem_store.dart';
+import '../store/narrador_store.dart';
+import '../store/nota_store.dart';
 import 'ficha_io.dart';
 
 /// O que fazer quando a ficha do backup já existe no aparelho.
@@ -20,7 +25,20 @@ class ResumoBackup {
   /// Nomes das fichas cujo id já existe neste aparelho.
   final List<String> colidem;
 
-  const ResumoBackup(this.versao, this.fichas, this.colidem);
+  final List<Map<String, dynamic>> notas;
+  final List<Map<String, dynamic>> camposNarrador;
+
+  /// Imagens dos cadernos, por id (o retrato viaja dentro do JSON da ficha).
+  final Map<String, Uint8List> imagens;
+
+  const ResumoBackup(
+    this.versao,
+    this.fichas,
+    this.colidem, {
+    this.notas = const [],
+    this.camposNarrador = const [],
+    this.imagens = const {},
+  });
 
   int get total => fichas.length;
 }
@@ -54,12 +72,33 @@ class BackupIO {
       add('fichas/$nome.json', json.convert(FichaIO.paraJson(f)));
     }
 
+    final campos = NarradorStore.campos();
+    if (campos.isNotEmpty) {
+      add('narrador/campos.json',
+          json.convert([for (final c in campos) c.toJson()]));
+    }
+
+    final notas = NotaStore.todas();
+    if (notas.isNotEmpty) {
+      add('narrador/notas.json',
+          json.convert([for (final n in notas) n.toJson()]));
+      for (final id in NotaStore.imagensUsadas()) {
+        final bytes = ImagemStore.bytes(id);
+        if (bytes != null) {
+          arquivo.addFile(
+              ArchiveFile('narrador/imagens/$id.jpg', bytes.length, bytes));
+        }
+      }
+    }
+
     add(
       'manifest.json',
       json.convert({
         'versao': versao,
         'app': app,
         'fichas': fichas.length,
+        'notas': notas.length,
+        'campos': campos.length,
       }),
     );
 
@@ -106,7 +145,31 @@ class BackupIO {
           '${j['nome'] ?? 'Sem nome'}',
     ];
 
-    return ResumoBackup(v, fichas, colidem);
+    List<Map<String, dynamic>> listaDe(String caminho) {
+      final arq = zip.files.where((f) => f.name == caminho).toList();
+      if (arq.isEmpty) return [];
+      final j = jsonDecode(utf8.decode(arq.first.content as List<int>));
+      return [
+        for (final e in (j as List)) (e as Map).cast<String, dynamic>(),
+      ];
+    }
+
+    const pastaImg = 'narrador/imagens/';
+    final imagens = <String, Uint8List>{
+      for (final arq in zip.files)
+        if (arq.name.startsWith(pastaImg) && arq.name.endsWith('.jpg'))
+          arq.name.substring(pastaImg.length, arq.name.length - 4):
+              Uint8List.fromList(arq.content as List<int>),
+    };
+
+    return ResumoBackup(
+      v,
+      fichas,
+      colidem,
+      notas: listaDe('narrador/notas.json'),
+      camposNarrador: listaDe('narrador/campos.json'),
+      imagens: imagens,
+    );
   }
 
   /// Grava as fichas do resumo. Devolve quantas foram gravadas.
@@ -132,6 +195,22 @@ class BackupIO {
       await FichaStore.salvar(
           await FichaIO.deJson(Map<String, dynamic>.from(j)));
       gravadas++;
+    }
+
+    for (final entrada in r.imagens.entries) {
+      await ImagemStore.gravar(entrada.key, entrada.value);
+    }
+    for (final j in r.notas) {
+      final n = Nota.fromJson(j);
+      if (NotaStore.porId(n.id) != null && politica == PoliticaColisao.pular) {
+        continue;
+      }
+      await NotaStore.salvar(n, tocar: false);
+    }
+    if (r.camposNarrador.isNotEmpty) {
+      // definição de campo é configuração global: o backup substitui
+      await NarradorStore.salvarCampos(
+          [for (final j in r.camposNarrador) CampoNarrador.fromJson(j)]);
     }
     return gravadas;
   }

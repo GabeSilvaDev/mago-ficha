@@ -89,6 +89,10 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('${r.total} ficha(s) no arquivo.'),
+            if (r.notas.isNotEmpty) Text('${r.notas.length} caderno(s).'),
+            if (r.camposNarrador.isNotEmpty)
+              Text('${r.camposNarrador.length} campo(s) do narrador '
+                  '(substituem os atuais).'),
             if (r.colidem.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('${r.colidem.length} já existe(m) neste aparelho:'),

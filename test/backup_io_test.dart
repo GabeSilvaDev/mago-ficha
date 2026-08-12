@@ -5,10 +5,21 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mago_a_ascensao/data/game_data.dart';
+import 'package:image/image.dart' as img;
+import 'package:mago_a_ascensao/models/campo_narrador.dart';
 import 'package:mago_a_ascensao/models/ficha.dart';
+import 'package:mago_a_ascensao/models/nota.dart';
 import 'package:mago_a_ascensao/services/backup_io.dart';
 import 'package:mago_a_ascensao/store/ficha_store.dart';
 import 'package:mago_a_ascensao/store/imagem_store.dart';
+import 'package:mago_a_ascensao/store/narrador_store.dart';
+import 'package:mago_a_ascensao/store/nota_store.dart';
+
+Uint8List _png() {
+  final im = img.Image(width: 120, height: 90);
+  img.fill(im, color: img.ColorRgb8(1, 2, 3));
+  return Uint8List.fromList(img.encodePng(im));
+}
 
 Ficha _ficha(String nome) {
   final f = Ficha.criar();
@@ -24,11 +35,15 @@ void main() {
     Hive.init('build/test-hive-backup');
     await Hive.openBox<String>(FichaStore.boxName);
     await ImagemStore.init();
+    await NarradorStore.init();
+    await NotaStore.init();
   });
 
   tearDown(() async {
     await Hive.box<String>(FichaStore.boxName).clear();
     await Hive.box<String>(ImagemStore.boxName).clear();
+    await Hive.box<String>(NarradorStore.boxName).clear();
+    await Hive.box<String>(NotaStore.boxName).clear();
   });
 
   test('zip tem manifesto e uma entrada por ficha', () {
@@ -127,6 +142,41 @@ void main() {
 
     final nomes = FichaStore.todas().map((f) => f.nome).toList()..sort();
     expect(nomes, ['Dois', 'Três', 'Um']);
+  });
+
+  test('backup leva e traz de volta cadernos, campos e imagens', () async {
+    await NarradorStore.salvarCampos([
+      const CampoNarrador(
+          id: 'a', nome: 'Status', tipo: TipoCampo.tag, opcoes: ['Vivo']),
+    ]);
+    final imgId = await ImagemStore.salvar(_png());
+    await NotaStore.salvar(Nota.criar()
+      ..titulo = 'Sessão 1'
+      ..texto = 'Começou'
+      ..imagens.add(imgId));
+
+    final bytes = BackupIO.montarZip(FichaStore.todas());
+
+    await Hive.box<String>(NotaStore.boxName).clear();
+    await Hive.box<String>(NarradorStore.boxName).clear();
+    await Hive.box<String>(ImagemStore.boxName).clear();
+
+    await BackupIO.aplicar(BackupIO.lerZip(bytes), PoliticaColisao.duplicar);
+
+    expect(NarradorStore.campos().map((c) => c.nome), ['Status']);
+    final notas = NotaStore.todas();
+    expect(notas.length, 1);
+    expect(notas.first.titulo, 'Sessão 1');
+    expect(notas.first.imagens.first, imgId);
+    expect(ImagemStore.bytes(imgId), isNotNull);
+  });
+
+  test('zip antigo, sem pasta do narrador, continua importável', () {
+    final resumo = BackupIO.lerZip(BackupIO.montarZip([_ficha('Sozinha')]));
+    expect(resumo.total, 1);
+    expect(resumo.notas, isEmpty);
+    expect(resumo.camposNarrador, isEmpty);
+    expect(resumo.imagens, isEmpty);
   });
 
   test('zip sem manifesto é recusado', () {
