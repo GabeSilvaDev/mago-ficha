@@ -1,12 +1,21 @@
 import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:image/image.dart' as img;
 import 'package:mago_a_ascensao/data/game_data.dart';
 import 'package:mago_a_ascensao/models/ficha.dart';
 import 'package:mago_a_ascensao/services/ficha_pdf.dart';
+import 'package:mago_a_ascensao/store/imagem_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() async => GameData.carregar());
+  setUpAll(() async {
+    await GameData.carregar();
+    Hive.init('build/test-hive-pdf');
+    await ImagemStore.init();
+  });
 
   test('gera ficha.pdf preenchida sobre a ficha oficial', () async {
     final f = Ficha.criar();
@@ -172,6 +181,25 @@ void main() {
     final out = File('build/ficha_test_anexo.pdf');
     out.createSync(recursive: true);
     out.writeAsBytesSync(bytesLonga);
+  });
+
+  test('ficha com retrato gera anexo mesmo sem texto excedente', () async {
+    final im = img.Image(width: 400, height: 400);
+    img.fill(im, color: img.ColorRgb8(90, 30, 120));
+
+    final f = Ficha.criar();
+    f.data['nome'] = 'Retratado';
+    f.retratoId =
+        await ImagemStore.salvar(Uint8List.fromList(img.encodePng(im)));
+
+    final bytes = await FichaPdf.gerar(f);
+    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    // sem texto cortado, o anexo existe só por causa do retrato
+    expect(FichaPdf.anexoGerado, isEmpty);
+
+    final out = File('build/ficha_test_retrato.pdf');
+    out.createSync(recursive: true);
+    out.writeAsBytesSync(bytes);
   });
 
   test('ficha com Esfera 7 e Arete 8 gera PDF sem estourar', () async {

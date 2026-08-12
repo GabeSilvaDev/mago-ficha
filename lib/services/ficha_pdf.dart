@@ -8,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../data/game_data.dart';
 import '../models/ficha.dart';
+import '../store/imagem_store.dart';
 
 /// Um bloco que não coube na ficha oficial e vai para as páginas de anexo.
 class ItemAnexo {
@@ -45,6 +46,10 @@ class FichaPdf {
     final dim = (spec['dim'] as List).cast<num>();
     final pgW = dim[0].toDouble(), pgH = dim[1].toDouble();
     final s = PdfPageFormat.a4.width / pgW; // px (150dpi) -> pontos
+
+    // A ficha oficial não tem espaço para foto: o retrato vai no anexo.
+    final retrato =
+        f.retratoId == null ? null : ImagemStore.bytes(f.retratoId!);
 
     /// Monta um documento do zero e devolve os bytes. [anexo] vazio = só as
     /// duas páginas oficiais.
@@ -495,7 +500,7 @@ class FichaPdf {
       if (acima.isNotEmpty) {
         anexoGerado.add(ItemAnexo('Valores acima de cinco', acima.join('\n')));
       }
-      if (anexo.isNotEmpty) {
+      if (anexo.isNotEmpty || retrato != null) {
         final negrito = pw.Font.helveticaBold();
         doc.addPage(pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
@@ -511,6 +516,16 @@ class FichaPdf {
               style: pw.TextStyle(font: helv, fontSize: 9, color: _tinta),
             ),
             pw.Divider(color: _tinta, height: 16),
+            if (retrato != null) ...[
+              pw.Center(
+                child: pw.SizedBox(
+                  height: 180,
+                  child: pw.Image(pw.MemoryImage(retrato),
+                      fit: pw.BoxFit.contain),
+                ),
+              ),
+              pw.SizedBox(height: 12),
+            ],
             for (final item in anexo) ...[
               pw.SizedBox(height: 8),
               pw.Text(item.titulo,
@@ -558,7 +573,7 @@ class FichaPdf {
       anexoGerado.add(ItemAnexo('Valores acima de cinco', acima.join('\n')));
     }
 
-    if (anexoGerado.isEmpty) return semAnexo;
+    if (anexoGerado.isEmpty && retrato == null) return semAnexo;
 
     // 2ª passada: mesmo desenho, agora com as páginas de anexo no fim.
     final itens = List<ItemAnexo>.from(anexoGerado);
