@@ -337,6 +337,11 @@ class FichaPdf {
           bola(g, xs[k], fila['y'] as num, 6);
         }
       }
+      final sobrouOutras = _sobrasPg2.skip(out2Filas.length).toList();
+      if (sobrouOutras.isNotEmpty) {
+        anexoGerado.add(ItemAnexo('Outras Características (continuação)',
+            sobrouOutras.map((e) => '${e.key}: ${e.value}').join('\n')));
+      }
       // Qualidades / Defeitos
       final quals = <List<String>>[];
       for (final e in f.positivos) {
@@ -365,12 +370,20 @@ class FichaPdf {
         texto(g, fonte, quals[i][1], q['custoX'], qY[i] - 3,
             tam: 7.3, centro: true);
       }
+      if (quals.length > qY.length) {
+        anexoGerado.add(ItemAnexo('Qualidades (continuação)',
+            quals.skip(qY.length).map((q) => '${q[0]} — ${q[1]}').join('\n')));
+      }
       final df = p2['defeitos'] as Map<String, dynamic>;
       final dY = (df['linhas'] as List).cast<num>();
       for (var i = 0; i < defs.length && i < dY.length; i++) {
         texto(g, fonte, defs[i][0], df['nomeX'], dY[i] - 3, tam: 7.3, maxPx: 225);
         texto(g, fonte, defs[i][1], df['bonusX'], dY[i] - 3,
             tam: 7.3, centro: true);
+      }
+      if (defs.length > dY.length) {
+        anexoGerado.add(ItemAnexo('Defeitos (continuação)',
+            defs.skip(dY.length).map((d) => '${d[0]} — ${d[1]}').join('\n')));
       }
       // Blocos de texto
       String sTxt(String k) => (f.data[k] ?? '').toString();
@@ -416,6 +429,14 @@ class FichaPdf {
           }
         }
       }
+      if (f.maravilhas.length > mars.length) {
+        anexoGerado.add(ItemAnexo(
+            'Maravilhas (continuação)',
+            f.maravilhas
+                .skip(mars.length)
+                .map((m) => '${m['Nome'] ?? ''}: ${m['Descrição'] ?? ''}')
+                .join('\n\n')));
+      }
       // Combate
       final cb = p2['combate'] as Map<String, dynamic>;
       final cbY = (cb['linhas'] as List).cast<num>();
@@ -434,6 +455,16 @@ class FichaPdf {
           texto(g, fonte, '${c[par[1]] ?? ''}', cb[par[0]], y,
               tam: 7.3, centro: true, maxPx: 80);
         }
+      }
+      if (f.combate.length > cbY.length) {
+        anexoGerado.add(ItemAnexo(
+            'Combate (continuação)',
+            f.combate
+                .skip(cbY.length)
+                .map((c) => '${c['Arma/Manobra'] ?? ''} — dif ${c['Dif.'] ?? ''}, '
+                    'dano ${c['Dano'] ?? ''} ${c['Tipo'] ?? ''}, '
+                    'alcance ${c['Alcance'] ?? ''}, cadência ${c['Cadência'] ?? ''}')
+                .join('\n')));
       }
     });
 

@@ -106,6 +106,35 @@ void main() {
     expect(FichaPdf.anexoGerado, isEmpty);
   });
 
+  test('listas que passam das linhas da ficha vão para o anexo', () async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Colecionador';
+    for (var i = 0; i < 14; i++) {
+      f.adicionar('positivos', {
+        'classe': 'qualidade',
+        'nome': 'Sentidos Aguçados',
+        'sel': 3,
+        'detalhe': 'variante $i'
+      });
+    }
+    for (var i = 0; i < 12; i++) {
+      f.adicionar('combate', {
+        'Arma/Manobra': 'Arma $i',
+        'Dif.': '6',
+        'Dano': '4',
+        'Tipo': 'Letal',
+        'Alcance': '10m',
+        'Cadência': '1'
+      });
+    }
+
+    await FichaPdf.gerar(f);
+
+    final titulos = FichaPdf.anexoGerado.map((e) => e.titulo).toList();
+    expect(titulos, contains('Qualidades (continuação)'));
+    expect(titulos, contains('Combate (continuação)'));
+  });
+
   test('ficha com Esfera 7 e Arete 8 gera PDF sem estourar', () async {
     final f = Ficha.criar();
     f.data['nome'] = 'Mestre da mesa livre';
