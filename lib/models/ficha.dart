@@ -156,9 +156,18 @@ class Ficha {
 
   bool get temRetrato => retratoId != null;
 
-  /// 'pc' (padrão) ou 'npc'.
+  /// 'pc' (padrão) ou 'npc'. Ficha importada de um JSON antigo (sem o campo)
+  /// entra como 'pc'; o narrador troca na própria ficha.
   String get tipo => (data['tipo'] as String?) ?? 'pc';
   bool get ehNpc => tipo == 'npc';
+
+  set ehNpc(bool v) {
+    if (v) {
+      data['tipo'] = 'npc';
+    } else {
+      data.remove('tipo');
+    }
+  }
 
   /// Valores dos campos customizados do narrador, por id do campo.
   Map<String, dynamic> get campos {

@@ -282,6 +282,20 @@ void main() {
     expect(Ficha({'id': 'x'}).ehNpc, isFalse);
   });
 
+  test('tipo é editável: JSON antigo vira NPC e volta', () {
+    // é o caso do NPC exportado antes do campo existir
+    final f = Ficha({'id': 'x', 'nome': 'Barqueiro'});
+    expect(f.ehNpc, isFalse);
+
+    f.ehNpc = true;
+    expect(f.ehNpc, isTrue);
+    expect(f.data['tipo'], 'npc');
+
+    f.ehNpc = false;
+    expect(f.ehNpc, isFalse);
+    expect(f.data.containsKey('tipo'), isFalse);
+  });
+
   test('campos customizados: grava, lê e apaga', () {
     final f = Ficha.criar();
     expect(f.campos, isEmpty);

@@ -257,6 +257,10 @@ Uma segunda aba, do lado da lista de magos:
   são preenchidos à mão: servem para ordenar e filtrar direto pelos valores que
   já estão na ficha. Os demais são preenchidos na própria ficha, na aba
   Personagem — vale para jogadores e NPCs.
+- **Jogador ou NPC** — a ficha tem o campo na aba Personagem e troca a qualquer
+  momento. Importante para JSON antigo: arquivo exportado antes desse campo
+  existir chega como jogador, e o import pergunta (ou marca o lote inteiro como
+  NPC de uma vez).
 - **NPCs** — o botão ➕ abre o **mesmo passo a passo do personagem de jogador**,
   só que em modo livre: nenhum limite trava o narrador (Esferas até 10, sem
   cobrar os 6 pontos nem os 15 bônus). NPC é uma `Ficha` normal com um selo, e

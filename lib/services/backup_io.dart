@@ -173,7 +173,11 @@ class BackupIO {
   }
 
   /// Grava as fichas do resumo. Devolve quantas foram gravadas.
-  static Future<int> aplicar(ResumoBackup r, PoliticaColisao politica) async {
+  ///
+  /// [marcarComoNpc] força `tipo: npc` em tudo que entrar — serve para o lote
+  /// de NPCs exportado antes do campo existir, que chegaria como jogador.
+  static Future<int> aplicar(ResumoBackup r, PoliticaColisao politica,
+      {bool marcarComoNpc = false}) async {
     var gravadas = 0;
     for (final j in r.fichas) {
       final id = j['id'];
@@ -186,14 +190,16 @@ class BackupIO {
         // justamente sobrescrever, então o id do backup é preservado.
         final ficha = await FichaIO.deJson(Map<String, dynamic>.from(j));
         ficha.data['id'] = id;
+        if (marcarComoNpc) ficha.ehNpc = true;
         await FichaStore.salvar(ficha);
         gravadas++;
         continue;
       }
 
       // não existe, ou existe e a política é duplicar: `deJson` resolve o id
-      await FichaStore.salvar(
-          await FichaIO.deJson(Map<String, dynamic>.from(j)));
+      final nova = await FichaIO.deJson(Map<String, dynamic>.from(j));
+      if (marcarComoNpc) nova.ehNpc = true;
+      await FichaStore.salvar(nova);
       gravadas++;
     }
 

@@ -147,6 +147,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             aba([
               FaixaSecao('Identidade', onEditar: () => _editarPasso(0)),
               _cardIdentidade(ficha),
+              _cardTipo(ficha),
               if (NarradorStore.campos().isNotEmpty) ...[
                 const FaixaSecao('Campos do narrador'),
                 _cardCamposNarrador(ficha),
@@ -254,6 +255,49 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
                 'Afinidade',
                 GameData.esferaPorChave(ficha.afinidade)?.nome ?? ''),
           ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Jogador ou NPC. Fica na própria ficha porque ficha importada de um JSON
+  /// antigo (sem o campo `tipo`) chega como jogador, e o narrador precisa
+  /// corrigir sem recriar nada.
+  Widget _cardTipo(Ficha ficha) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text('Tipo de ficha',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Cores.indigo)),
+            ),
+            SegmentedButton<bool>(
+              key: const ValueKey('tipo-ficha'),
+              segments: const [
+                ButtonSegment(
+                    value: false,
+                    label: Text('Jogador'),
+                    icon: Icon(Icons.person_outline, size: 16)),
+                ButtonSegment(
+                    value: true,
+                    label: Text('NPC'),
+                    icon: Icon(Icons.groups_outlined, size: 16)),
+              ],
+              selected: {ficha.ehNpc},
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 12)),
+              ),
+              onSelectionChanged: (sel) {
+                ficha.ehNpc = sel.first;
+                _salvarQuieto();
+              },
             ),
           ],
         ),

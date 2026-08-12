@@ -171,6 +171,38 @@ void main() {
     expect(ImagemStore.bytes(imgId), isNotNull);
   });
 
+  test('importar marcando como NPC vale para o lote inteiro', () async {
+    final bytes = BackupIO.montarZip([_ficha('Um'), _ficha('Dois')]);
+    await Hive.box<String>(FichaStore.boxName).clear();
+
+    await BackupIO.aplicar(BackupIO.lerZip(bytes), PoliticaColisao.duplicar,
+        marcarComoNpc: true);
+
+    final todas = FichaStore.todas();
+    expect(todas.length, 2);
+    expect(todas.every((f) => f.ehNpc), isTrue);
+  });
+
+  test('sem marcar, o lote continua entrando como jogador', () async {
+    final bytes = BackupIO.montarZip([_ficha('Um')]);
+    await Hive.box<String>(FichaStore.boxName).clear();
+
+    await BackupIO.aplicar(BackupIO.lerZip(bytes), PoliticaColisao.duplicar);
+
+    expect(FichaStore.todas().single.ehNpc, isFalse);
+  });
+
+  test('substituir tambem respeita marcar como NPC', () async {
+    final existente = _ficha('Repetida');
+    await FichaStore.salvar(existente);
+    final bytes = BackupIO.montarZip([existente]);
+
+    await BackupIO.aplicar(BackupIO.lerZip(bytes), PoliticaColisao.substituir,
+        marcarComoNpc: true);
+
+    expect(FichaStore.porId(existente.id)!.ehNpc, isTrue);
+  });
+
   test('zip antigo, sem pasta do narrador, continua importável', () {
     final resumo = BackupIO.lerZip(BackupIO.montarZip([_ficha('Sozinha')]));
     expect(resumo.total, 1);

@@ -46,6 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!nome.toLowerCase().endsWith('.zip')) {
         final f = await FichaIO.deJson(
             jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>);
+        if (!context.mounted) return;
+        // JSON exportado antes do campo `tipo` existir chega como jogador
+        final comoNpc = await _perguntarTipo(context, f.nome);
+        if (comoNpc == null) return;
+        if (comoNpc) f.ehNpc = true;
         await FichaStore.salvar(f);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -61,9 +66,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final resumo = BackupIO.lerZip(bytes);
       if (!context.mounted) return;
-      final politica = await _confirmarBackup(context, resumo);
-      if (politica == null || !context.mounted) return;
-      final n = await BackupIO.aplicar(resumo, politica);
+      final escolha = await _confirmarBackup(context, resumo);
+      if (escolha == null || !context.mounted) return;
+      final n = await BackupIO.aplicar(resumo, escolha.$1,
+          marcarComoNpc: escolha.$2);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$n ficha(s) importada(s).')),
@@ -76,49 +82,92 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Mostra o que vem no backup e pergunta o que fazer com as repetidas.
-  Future<PoliticaColisao?> _confirmarBackup(
-      BuildContext context, ResumoBackup r) {
-    return showDialog<PoliticaColisao>(
+  /// Ficha única: jogador ou NPC? Devolve null se cancelar.
+  Future<bool?> _perguntarTipo(BuildContext context, String nome) {
+    return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Cores.pergaminho,
-        title: const Text('Importar backup'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${r.total} ficha(s) no arquivo.'),
-            if (r.notas.isNotEmpty) Text('${r.notas.length} caderno(s).'),
-            if (r.camposNarrador.isNotEmpty)
-              Text('${r.camposNarrador.length} campo(s) do narrador '
-                  '(substituem os atuais).'),
-            if (r.colidem.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('${r.colidem.length} já existe(m) neste aparelho:'),
-              Text(r.colidem.join(', '),
-                  style: const TextStyle(fontStyle: FontStyle.italic)),
-              const SizedBox(height: 8),
-              const Text('O que fazer com elas?'),
-            ],
-          ],
-        ),
+        title: const Text('Importar como'),
+        content: Text('"${nome.isEmpty ? 'Sem nome' : nome}" entra como '
+            'personagem de jogador ou NPC do narrador?\n\n'
+            'Dá para trocar depois, na aba Personagem da ficha.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancelar')),
-          if (r.colidem.isNotEmpty) ...[
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, PoliticaColisao.pular),
-                child: const Text('Pular')),
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, PoliticaColisao.substituir),
-                child: const Text('Substituir')),
-          ],
           TextButton(
-              onPressed: () => Navigator.pop(ctx, PoliticaColisao.duplicar),
-              child: Text(r.colidem.isEmpty ? 'Importar' : 'Duplicar')),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('NPC')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Jogador',
+                  style: TextStyle(color: Cores.indigo))),
         ],
+      ),
+    );
+  }
+
+  /// Mostra o que vem no backup, pergunta o que fazer com as repetidas e se
+  /// o lote inteiro entra como NPC. Devolve (política, marcarComoNpc).
+  Future<(PoliticaColisao, bool)?> _confirmarBackup(
+      BuildContext context, ResumoBackup r) {
+    var comoNpc = false;
+    return showDialog<(PoliticaColisao, bool)>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: Cores.pergaminho,
+          title: const Text('Importar backup'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${r.total} ficha(s) no arquivo.'),
+              if (r.notas.isNotEmpty) Text('${r.notas.length} caderno(s).'),
+              if (r.camposNarrador.isNotEmpty)
+                Text('${r.camposNarrador.length} campo(s) do narrador '
+                    '(substituem os atuais).'),
+              CheckboxListTile(
+                key: const ValueKey('importar-como-npc'),
+                value: comoNpc,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Marcar todas como NPC',
+                    style: TextStyle(fontSize: 14)),
+                onChanged: (v) => setLocal(() => comoNpc = v ?? false),
+              ),
+              if (r.colidem.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text('${r.colidem.length} já existe(m) neste aparelho:'),
+                Text(r.colidem.join(', '),
+                    style: const TextStyle(fontStyle: FontStyle.italic)),
+                const SizedBox(height: 8),
+                const Text('O que fazer com elas?'),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
+            if (r.colidem.isNotEmpty) ...[
+              TextButton(
+                  onPressed: () =>
+                      Navigator.pop(ctx, (PoliticaColisao.pular, comoNpc)),
+                  child: const Text('Pular')),
+              TextButton(
+                  onPressed: () => Navigator.pop(
+                      ctx, (PoliticaColisao.substituir, comoNpc)),
+                  child: const Text('Substituir')),
+            ],
+            TextButton(
+                onPressed: () =>
+                    Navigator.pop(ctx, (PoliticaColisao.duplicar, comoNpc)),
+                child: Text(r.colidem.isEmpty ? 'Importar' : 'Duplicar')),
+          ],
+        ),
       ),
     );
   }
