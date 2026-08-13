@@ -43,6 +43,35 @@ class FichaNaMesa {
       };
 }
 
+/// O que está no mural da mesa agora.
+class ItemMural {
+  final String imagemBase64;
+  final String legenda;
+  final String porUid;
+  final DateTime em;
+
+  const ItemMural({
+    required this.imagemBase64,
+    required this.legenda,
+    required this.porUid,
+    required this.em,
+  });
+
+  factory ItemMural.fromJson(Map<String, dynamic> j) => ItemMural(
+        imagemBase64: (j['imagem'] ?? '') as String,
+        legenda: (j['legenda'] ?? '') as String,
+        porUid: (j['porUid'] ?? '') as String,
+        em: DateTime.parse(j['em'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'imagem': imagemBase64,
+        'legenda': legenda,
+        'porUid': porUid,
+        'em': em.toIso8601String(),
+      };
+}
+
 /// Tudo que o app precisa da mesa online.
 ///
 /// Existe como interface para as telas serem testáveis sem rede: em produção
@@ -94,4 +123,14 @@ abstract class MesaService {
 
   /// Uma ficha específica. Null se não existe ou se você não pode ver.
   Stream<FichaNaMesa?> observarFicha(String mesaId, String donoUid);
+
+  /// Só o mestre. Põe a imagem no mural da mesa.
+  Future<void> mostrarNoMural(
+      String mesaId, String imagemBase64, String legenda);
+
+  /// Só o mestre. Tira o que estiver no mural.
+  Future<void> limparMural(String mesaId);
+
+  /// Null quando não há nada no mural.
+  Stream<ItemMural?> observarMural(String mesaId);
 }

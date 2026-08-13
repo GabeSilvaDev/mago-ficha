@@ -189,6 +189,45 @@ void main() {
     expect(await mestre.observarFichas(mesa.id).first, isEmpty);
   });
 
+  test('mestre mostra no mural e todos veem', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+
+    await mestre.mostrarNoMural(mesa.id, 'AAAA', 'mapa da estação');
+
+    final visto = await kaue.observarMural(mesa.id).first;
+    expect(visto!.imagemBase64, 'AAAA');
+    expect(visto.legenda, 'mapa da estação');
+    expect(visto.porUid, 'u-mestre');
+  });
+
+  test('jogador não escreve no mural', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+
+    expect(() => kaue.mostrarNoMural(mesa.id, 'AAAA', 'tentativa'),
+        throwsA(isA<SemPermissao>()));
+    expect(() => kaue.limparMural(mesa.id), throwsA(isA<SemPermissao>()));
+  });
+
+  test('limpar mural: volta a ser null', () async {
+    final (mestre, mesa) = await mesaPronta();
+    await mestre.mostrarNoMural(mesa.id, 'AAAA', '');
+
+    await mestre.limparMural(mesa.id);
+
+    expect(await mestre.observarMural(mesa.id).first, isNull);
+  });
+
+  test('fechar a mesa leva o mural junto', () async {
+    final (mestre, mesa) = await mesaPronta();
+    await mestre.mostrarNoMural(mesa.id, 'AAAA', 'mapa');
+
+    await mestre.fecharMesa(mesa.id);
+
+    expect(mestre.mundo.mural[mesa.id], isNull);
+  });
+
   test('sair da mesa despublica a ficha', () async {
     final (mestre, mesa) = await mesaPronta();
     final kaue = await jogadorNa(mestre, mesa);

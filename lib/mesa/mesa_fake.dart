@@ -10,10 +10,12 @@ class MundoFake {
   final Map<String, Mesa> mesas = {};
   final Map<String, Map<String, Membro>> membros = {};
   final Map<String, Map<String, FichaNaMesa>> fichas = {};
+  final Map<String, ItemMural> mural = {};
 
   final Map<String, StreamController<Mesa?>> _mesaCtrl = {};
   final Map<String, StreamController<List<Membro>>> _membrosCtrl = {};
   final Map<String, StreamController<int>> _fichasCtrl = {};
+  final Map<String, StreamController<ItemMural?>> _muralCtrl = {};
   int _seq = 0;
   int _versao = 0;
 
@@ -23,6 +25,7 @@ class MundoFake {
     _mesaCtrl[mesaId]?.add(mesas[mesaId]);
     _membrosCtrl[mesaId]?.add(membros[mesaId]?.values.toList() ?? const []);
     _fichasCtrl[mesaId]?.add(++_versao);
+    _muralCtrl[mesaId]?.add(mural[mesaId]);
   }
 
   Stream<Mesa?> streamMesa(String id) {
@@ -45,6 +48,13 @@ class MundoFake {
     final c =
         _fichasCtrl.putIfAbsent(id, () => StreamController<int>.broadcast());
     scheduleMicrotask(() => c.add(++_versao));
+    return c.stream;
+  }
+
+  Stream<ItemMural?> streamMural(String id) {
+    final c = _muralCtrl.putIfAbsent(
+        id, () => StreamController<ItemMural?>.broadcast());
+    scheduleMicrotask(() => c.add(mural[id]));
     return c.stream;
   }
 }
@@ -199,6 +209,7 @@ class MesaFake implements MesaService {
     mundo.mesas.remove(mesaId);
     mundo.membros.remove(mesaId);
     mundo.fichas.remove(mesaId);
+    mundo.mural.remove(mesaId);
     mundo.notificar(mesaId);
   }
 
@@ -254,4 +265,32 @@ class MesaFake implements MesaService {
         }
         return null;
       });
+
+  @override
+  Future<void> mostrarNoMural(
+      String mesaId, String imagemBase64, String legenda) async {
+    _exigeLogin();
+    _exigeMestre(mesaId);
+    mundo.mural[mesaId] = ItemMural(
+      imagemBase64: imagemBase64,
+      legenda: legenda,
+      porUid: _uid!,
+      em: relogio(),
+    );
+    mundo.notificar(mesaId);
+  }
+
+  @override
+  Future<void> limparMural(String mesaId) async {
+    _exigeLogin();
+    _exigeMestre(mesaId);
+    mundo.mural.remove(mesaId);
+    mundo.notificar(mesaId);
+  }
+
+  @override
+  Stream<ItemMural?> observarMural(String mesaId) {
+    _exigeLogin();
+    return mundo.streamMural(mesaId);
+  }
 }

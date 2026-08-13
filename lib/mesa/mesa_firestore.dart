@@ -145,6 +145,40 @@ class MesaFirestore implements MesaService {
       _mesa(mesaId).collection('fichas').doc(donoUid).snapshots().map(
           (d) => d.exists ? FichaNaMesa.fromJson(d.id, d.data()!) : null);
 
+  DocumentReference<Map<String, dynamic>> _mural(String mesaId) =>
+      _mesa(mesaId).collection('mural').doc('atual');
+
+  @override
+  Future<void> mostrarNoMural(
+      String mesaId, String imagemBase64, String legenda) async {
+    try {
+      await _mural(mesaId).set(ItemMural(
+        imagemBase64: imagemBase64,
+        legenda: legenda,
+        porUid: uid ?? '',
+        em: DateTime.now(),
+      ).toJson());
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw SemPermissao();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> limparMural(String mesaId) async {
+    try {
+      await _mural(mesaId).delete();
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw SemPermissao();
+      rethrow;
+    }
+  }
+
+  @override
+  Stream<ItemMural?> observarMural(String mesaId) => _mural(mesaId)
+      .snapshots()
+      .map((d) => d.exists ? ItemMural.fromJson(d.data()!) : null);
+
   @override
   Stream<Mesa?> observarMesa(String mesaId) => _mesa(mesaId)
       .snapshots()
@@ -209,6 +243,7 @@ class MesaFirestore implements MesaService {
     final codigo = doc.data()!['codigo'] as String;
     try {
       // subcoleção não some junto com o pai: apaga o que está dentro antes
+      await _mural(mesaId).delete();
       final fichas = await _mesa(mesaId).collection('fichas').get();
       for (final f in fichas.docs) {
         await f.reference.delete();
