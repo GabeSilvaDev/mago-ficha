@@ -45,4 +45,27 @@ void main() {
     expect(() => ImagemMural.preparar(Uint8List.fromList([1, 2, 3])),
         throwsA(isA<Exception>()));
   });
+
+  test('miniatura é pequena o suficiente para a galeria inteira', () {
+    final b64 = ImagemMural.miniatura(_ruido(1600, 1200));
+    expect(b64.length, lessThan(ImagemMural.tetoMiniatura));
+    final im = img.decodeImage(base64Decode(b64))!;
+    expect(im.width, lessThanOrEqualTo(200));
+  });
+
+  test('miniatura de imagem pequena não é ampliada', () {
+    final b64 = ImagemMural.miniatura(_ruido(120, 90));
+    final im = img.decodeImage(base64Decode(b64))!;
+    expect(im.width, 120);
+  });
+
+  test('cinquenta miniaturas cabem numa abertura de galeria barata', () {
+    final b64 = ImagemMural.miniatura(_ruido(1600, 1200));
+    expect(b64.length * 50, lessThan(2 * 1024 * 1024));
+  });
+
+  test('miniatura de bytes inválidos falha com mensagem clara', () {
+    expect(() => ImagemMural.miniatura(Uint8List.fromList([1, 2, 3])),
+        throwsA(isA<Exception>()));
+  });
 }
