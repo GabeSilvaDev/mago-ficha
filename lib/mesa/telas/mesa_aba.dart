@@ -3,7 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../models/ficha.dart';
+import '../../services/ficha_io.dart';
+import '../../store/ficha_store.dart';
 import '../../theme.dart';
+import '../../widgets/retrato.dart';
+import '../espelho_ficha.dart';
 import '../mesa_firestore.dart';
 import '../mesa_service.dart';
 import '../mesa_store.dart';
@@ -26,18 +31,40 @@ class _MesaAbaState extends State<MesaAba> {
   late final MesaService _servico;
   Timer? _ponto;
   bool _ocupado = false;
+  EspelhoFicha? _espelho;
 
   @override
   void initState() {
     super.initState();
     _servico = widget.servico ?? MesaFirestore();
-    if (MesaStore.atual != null) _ligarPonto();
+    final estado = MesaStore.atual;
+    if (estado != null) {
+      _ligarPonto();
+      // o app pode ter sido fechado dentro da mesa: religa o espelho da ficha
+      // que já estava publicada
+      final fichaId = estado.fichaPublicadaId;
+      if (fichaId != null) _ligarEspelho(estado.mesaId, fichaId);
+    }
   }
 
   @override
   void dispose() {
     _ponto?.cancel();
+    _desligarEspelho();
     super.dispose();
+  }
+
+  void _ligarEspelho(String mesaId, String fichaId) {
+    _espelho = EspelhoFicha(_servico)..ligar(mesaId, fichaId);
+    FichaStore.observador = _espelho!.aoSalvar;
+  }
+
+  /// Espelho morto com observador vivo faz o app escrever numa mesa que já não
+  /// existe: os dois desligam juntos, sempre.
+  void _desligarEspelho() {
+    FichaStore.observador = null;
+    _espelho?.desligar();
+    _espelho = null;
   }
 
   /// Batimento de presença enquanto o app está aberto na mesa.
@@ -110,6 +137,7 @@ class _MesaAbaState extends State<MesaAba> {
     await _comEspera(() async {
       await _servico.sair(mesaId);
       _desligarPonto();
+      _desligarEspelho();
       await MesaStore.limpar();
     });
   }
@@ -117,6 +145,7 @@ class _MesaAbaState extends State<MesaAba> {
   /// Sem pedir nada: a mesa acabou por fora (fechada ou fui removido).
   Future<void> _voltarParaOffline(String motivo) async {
     _desligarPonto();
+    _desligarEspelho();
     await MesaStore.limpar();
     if (!mounted) return;
     setState(() {});
@@ -148,7 +177,62 @@ class _MesaAbaState extends State<MesaAba> {
     await _comEspera(() async {
       await _servico.fecharMesa(mesaId);
       _desligarPonto();
+      _desligarEspelho();
       await MesaStore.limpar();
+    });
+  }
+
+  /// Escolhe uma ficha local e a espelha na mesa. NPC fica de fora: quem
+  /// publica é jogador com o próprio mago.
+  Future<void> _publicar(EstadoMesa estado) async {
+    final minhas = FichaStore.todas().where((f) => !f.ehNpc).toList();
+    if (minhas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Você ainda não tem nenhum mago para publicar.')));
+      return;
+    }
+    final escolhida = await showDialog<Ficha>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: Cores.pergaminho,
+        title: const Text('Publicar uma ficha'),
+        children: [
+          for (final f in minhas)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, f),
+              child: Row(
+                children: [
+                  RetratoAvatar(retratoId: f.retratoId, tamanho: 32),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(f.nome.isEmpty ? 'Sem nome' : f.nome,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: Cores.indigo)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (escolhida == null) return;
+
+    await _comEspera(() async {
+      await _servico.publicarFicha(
+        estado.mesaId,
+        FichaIO.paraJson(escolhida),
+        escolhida.nome.isEmpty ? 'Sem nome' : escolhida.nome,
+      );
+      await MesaStore.entrar(estado.comFicha(escolhida.id));
+      _ligarEspelho(estado.mesaId, escolhida.id);
+    });
+  }
+
+  Future<void> _tirarDaMesa(EstadoMesa estado) async {
+    await _comEspera(() async {
+      await _servico.despublicarFicha(estado.mesaId);
+      _desligarEspelho();
+      await MesaStore.entrar(estado.comFicha(null));
     });
   }
 
@@ -269,6 +353,8 @@ class _MesaAbaState extends State<MesaAba> {
             ),
             const FaixaSecao('Quem está na mesa'),
             _membros(estado, souMestre),
+            const FaixaSecao('Minha ficha nesta mesa'),
+            _minhaFicha(estado),
             const SizedBox(height: 16),
             if (_ocupado)
               const Center(child: CircularProgressIndicator())
@@ -292,6 +378,64 @@ class _MesaAbaState extends State<MesaAba> {
           ],
         );
       },
+    );
+  }
+
+  /// A ficha que EU publiquei. O mestre também joga com uma às vezes, então
+  /// isto vale para os dois papéis.
+  Widget _minhaFicha(EstadoMesa estado) {
+    final fichaId = estado.fichaPublicadaId;
+    final ficha = fichaId == null ? null : FichaStore.porId(fichaId);
+
+    if (fichaId == null || ficha == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Publicando a ficha, o mestre acompanha o que você marca nela '
+                'durante a sessão. Os outros jogadores não veem.',
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: OutlinedButton.icon(
+                  onPressed: _ocupado ? null : () => _publicar(estado),
+                  icon: const Icon(Icons.upload_outlined),
+                  label: const Text('Publicar uma ficha'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: Cores.indigo,
+                      side: const BorderSide(color: Cores.indigo)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: RetratoAvatar(retratoId: ficha.retratoId),
+            title: Text(ficha.nome.isEmpty ? 'Sem nome' : ficha.nome,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Cores.indigo)),
+            subtitle: const Text('o mestre vê as mudanças em segundos'),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: TextButton.icon(
+              onPressed: _ocupado ? null : () => _tirarDaMesa(estado),
+              icon: const Icon(Icons.cloud_off_outlined, size: 18),
+              label: const Text('Tirar da mesa'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
