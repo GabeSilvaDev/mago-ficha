@@ -137,4 +137,65 @@ void main() {
     final depois = (await mestre.observarMembros(mesa.id).first).single.visto;
     expect(depois.isAfter(antes), isTrue);
   });
+
+  test('publicar ficha: o mestre vê, o outro jogador não', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    final erik = await jogadorNa(mestre, mesa, uid: 'u-erik', nome: 'Erik');
+
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia'}, 'Cotoia');
+
+    final doMestre = await mestre.observarFichas(mesa.id).first;
+    expect(doMestre.single.donoUid, 'u-kaue');
+    expect(doMestre.single.ficha['nome'], 'Cotoia');
+
+    // o outro jogador não enxerga nada
+    expect(await erik.observarFichas(mesa.id).first, isEmpty);
+    expect(await erik.observarFicha(mesa.id, 'u-kaue').first, isNull);
+
+    // o dono enxerga a própria
+    expect((await kaue.observarFicha(mesa.id, 'u-kaue').first)!.nome, 'Cotoia');
+  });
+
+  test('publicar de novo substitui, não duplica', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia', 'arete': 1}, 'Cotoia');
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia', 'arete': 2}, 'Cotoia');
+
+    final fichas = await mestre.observarFichas(mesa.id).first;
+    expect(fichas.length, 1);
+    expect(fichas.single.ficha['arete'], 2);
+  });
+
+  test('mestre não escreve na ficha do jogador', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia'}, 'Cotoia');
+
+    // não existe API para isso; a garantia é o dono do documento
+    expect(() => mestre.despublicarFichaDe(mesa.id, 'u-kaue'),
+        throwsA(isA<SemPermissao>()));
+  });
+
+  test('despublicar tira a ficha da mesa', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia'}, 'Cotoia');
+
+    await kaue.despublicarFicha(mesa.id);
+
+    expect(await mestre.observarFichas(mesa.id).first, isEmpty);
+  });
+
+  test('sair da mesa despublica a ficha', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia'}, 'Cotoia');
+
+    await kaue.sair(mesa.id);
+
+    expect(await mestre.observarFichas(mesa.id).first, isEmpty);
+  });
 }

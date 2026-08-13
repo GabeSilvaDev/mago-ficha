@@ -56,6 +56,11 @@ service cloud.firestore {
       match /fichas/{donoUid} {
         allow read:  if logado() && (donoUid == uid() || souMestre(mesaId));
         allow write: if logado() && donoUid == uid();
+        // O mestre não escreve na ficha de ninguém, mas precisa poder apagar
+        // ao fechar a mesa — senão a cópia fica órfã para sempre, sem mesa
+        // que dê acesso a ela. Apagar a cópia não mexe na ficha do jogador,
+        // que continua no aparelho dele.
+        allow delete: if souMestre(mesaId);
       }
 
       // Fase 3. Mural de imagens: todos leem, só o mestre escreve.

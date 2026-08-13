@@ -111,6 +111,41 @@ class MesaFirestore implements MesaService {
   }
 
   @override
+  Future<void> publicarFicha(
+      String mesaId, Map<String, dynamic> ficha, String nome) async {
+    final meuUid = uid;
+    if (meuUid == null) throw SemPermissao();
+    await _mesa(mesaId).collection('fichas').doc(meuUid).set({
+      'dono': meuUid,
+      'nome': nome,
+      'atualizadaEm': DateTime.now().toIso8601String(),
+      'ficha': ficha,
+    });
+  }
+
+  @override
+  Future<void> despublicarFicha(String mesaId) async {
+    final meuUid = uid;
+    if (meuUid == null) return;
+    await _mesa(mesaId).collection('fichas').doc(meuUid).delete();
+  }
+
+  // Quem corta o que cada um vê é a regra de segurança: para o jogador comum
+  // esta mesma consulta devolve só o documento dele. Não há filtro no cliente
+  // porque filtro no cliente não protege nada.
+  @override
+  Stream<List<FichaNaMesa>> observarFichas(String mesaId) => _mesa(mesaId)
+      .collection('fichas')
+      .snapshots()
+      .map((q) =>
+          q.docs.map((d) => FichaNaMesa.fromJson(d.id, d.data())).toList());
+
+  @override
+  Stream<FichaNaMesa?> observarFicha(String mesaId, String donoUid) =>
+      _mesa(mesaId).collection('fichas').doc(donoUid).snapshots().map(
+          (d) => d.exists ? FichaNaMesa.fromJson(d.id, d.data()!) : null);
+
+  @override
   Stream<Mesa?> observarMesa(String mesaId) => _mesa(mesaId)
       .snapshots()
       .map((d) => d.exists ? Mesa.fromJson(mesaId, d.data()!) : null);
@@ -135,6 +170,9 @@ class MesaFirestore implements MesaService {
   Future<void> sair(String mesaId) async {
     final meuUid = uid;
     if (meuUid == null) return;
+    // primeiro a ficha: depois de deixar de ser membro a regra já não deixa
+    // apagar nada aqui dentro
+    await despublicarFicha(mesaId);
     await _mesa(mesaId).collection('membros').doc(meuUid).delete();
   }
 
@@ -170,7 +208,11 @@ class MesaFirestore implements MesaService {
     if (!doc.exists) return;
     final codigo = doc.data()!['codigo'] as String;
     try {
-      // subcoleção não some junto com o pai: apaga membros antes da mesa
+      // subcoleção não some junto com o pai: apaga o que está dentro antes
+      final fichas = await _mesa(mesaId).collection('fichas').get();
+      for (final f in fichas.docs) {
+        await f.reference.delete();
+      }
       final membros = await _mesa(mesaId).collection('membros').get();
       for (final m in membros.docs) {
         await m.reference.delete();

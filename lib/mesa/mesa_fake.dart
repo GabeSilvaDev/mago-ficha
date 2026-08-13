@@ -9,16 +9,20 @@ import 'modelos.dart';
 class MundoFake {
   final Map<String, Mesa> mesas = {};
   final Map<String, Map<String, Membro>> membros = {};
+  final Map<String, Map<String, FichaNaMesa>> fichas = {};
 
   final Map<String, StreamController<Mesa?>> _mesaCtrl = {};
   final Map<String, StreamController<List<Membro>>> _membrosCtrl = {};
+  final Map<String, StreamController<int>> _fichasCtrl = {};
   int _seq = 0;
+  int _versao = 0;
 
   String novoId() => 'mesa-${++_seq}';
 
   void notificar(String mesaId) {
     _mesaCtrl[mesaId]?.add(mesas[mesaId]);
     _membrosCtrl[mesaId]?.add(membros[mesaId]?.values.toList() ?? const []);
+    _fichasCtrl[mesaId]?.add(++_versao);
   }
 
   Stream<Mesa?> streamMesa(String id) {
@@ -32,6 +36,15 @@ class MundoFake {
     final c = _membrosCtrl.putIfAbsent(
         id, () => StreamController<List<Membro>>.broadcast());
     scheduleMicrotask(() => c.add(membros[id]?.values.toList() ?? const []));
+    return c.stream;
+  }
+
+  /// Emite um número que só serve de gatilho: quem escuta relê `fichas` na
+  /// hora, já filtrando pelo que aquele uid pode ver.
+  Stream<int> streamFichas(String id) {
+    final c =
+        _fichasCtrl.putIfAbsent(id, () => StreamController<int>.broadcast());
+    scheduleMicrotask(() => c.add(++_versao));
     return c.stream;
   }
 }
@@ -142,6 +155,8 @@ class MesaFake implements MesaService {
   @override
   Future<void> sair(String mesaId) async {
     _exigeLogin();
+    // a ficha sai junto: quem não está na mesa não deixa cópia para trás
+    mundo.fichas[mesaId]?.remove(_uid);
     mundo.membros[mesaId]?.remove(_uid);
     mundo.notificar(mesaId);
   }
@@ -175,6 +190,58 @@ class MesaFake implements MesaService {
     _exigeMestre(mesaId);
     mundo.mesas.remove(mesaId);
     mundo.membros.remove(mesaId);
+    mundo.fichas.remove(mesaId);
     mundo.notificar(mesaId);
   }
+
+  @override
+  Future<void> publicarFicha(
+      String mesaId, Map<String, dynamic> ficha, String nome) async {
+    _exigeLogin();
+    _exigeMesa(mesaId);
+    (mundo.fichas[mesaId] ??= {})[_uid!] = FichaNaMesa(
+      donoUid: _uid!,
+      nome: nome,
+      atualizadaEm: relogio(),
+      ficha: Map<String, dynamic>.from(ficha),
+    );
+    mundo.notificar(mesaId);
+  }
+
+  @override
+  Future<void> despublicarFicha(String mesaId) async {
+    _exigeLogin();
+    mundo.fichas[mesaId]?.remove(_uid);
+    mundo.notificar(mesaId);
+  }
+
+  /// Só existe no fake, para provar nos testes que o mestre NÃO pode.
+  Future<void> despublicarFichaDe(String mesaId, String donoUid) async {
+    if (donoUid != _uid) throw SemPermissao();
+    await despublicarFicha(mesaId);
+  }
+
+  bool _souMestreDe(String mesaId) => mundo.mesas[mesaId]?.mestreUid == _uid;
+
+  /// O que ESTE uid pode ver. No Firestore quem corta é a regra de segurança;
+  /// aqui o corte é na mão, para o fake não mentir sobre o que o jogador
+  /// enxerga.
+  List<FichaNaMesa> _visiveis(String mesaId) {
+    final todas = mundo.fichas[mesaId]?.values.toList() ?? const <FichaNaMesa>[];
+    if (_souMestreDe(mesaId)) return todas;
+    return todas.where((f) => f.donoUid == _uid).toList();
+  }
+
+  @override
+  Stream<List<FichaNaMesa>> observarFichas(String mesaId) =>
+      mundo.streamFichas(mesaId).map((_) => _visiveis(mesaId));
+
+  @override
+  Stream<FichaNaMesa?> observarFicha(String mesaId, String donoUid) =>
+      observarFichas(mesaId).map((lista) {
+        for (final f in lista) {
+          if (f.donoUid == donoUid) return f;
+        }
+        return null;
+      });
 }

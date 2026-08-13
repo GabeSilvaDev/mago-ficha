@@ -12,6 +12,37 @@ class SemPermissao implements Exception {
   String toString() => 'Só o mestre da mesa pode fazer isso.';
 }
 
+/// Uma ficha publicada numa mesa. É uma cópia: a verdade continua no Hive do
+/// dono. Só o dono escreve; o mestre lê.
+class FichaNaMesa {
+  final String donoUid;
+  final String nome;
+  final DateTime atualizadaEm;
+  final Map<String, dynamic> ficha;
+
+  const FichaNaMesa({
+    required this.donoUid,
+    required this.nome,
+    required this.atualizadaEm,
+    required this.ficha,
+  });
+
+  factory FichaNaMesa.fromJson(String donoUid, Map<String, dynamic> j) =>
+      FichaNaMesa(
+        donoUid: donoUid,
+        nome: (j['nome'] ?? '') as String,
+        atualizadaEm: DateTime.parse(j['atualizadaEm'] as String),
+        ficha: (j['ficha'] as Map).cast<String, dynamic>(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'dono': donoUid,
+        'nome': nome,
+        'atualizadaEm': atualizadaEm.toIso8601String(),
+        'ficha': ficha,
+      };
+}
+
 /// Tudo que o app precisa da mesa online.
 ///
 /// Existe como interface para as telas serem testáveis sem rede: em produção
@@ -50,4 +81,17 @@ abstract class MesaService {
 
   /// Só o mestre. Apaga a mesa inteira.
   Future<void> fecharMesa(String mesaId);
+
+  /// Publica (ou atualiza) a MINHA ficha nesta mesa.
+  Future<void> publicarFicha(
+      String mesaId, Map<String, dynamic> ficha, String nome);
+
+  /// Tira a minha ficha da mesa.
+  Future<void> despublicarFicha(String mesaId);
+
+  /// Mestre: todas as fichas publicadas. Jogador: só a dele (uma ou nenhuma).
+  Stream<List<FichaNaMesa>> observarFichas(String mesaId);
+
+  /// Uma ficha específica. Null se não existe ou se você não pode ver.
+  Stream<FichaNaMesa?> observarFicha(String mesaId, String donoUid);
 }
