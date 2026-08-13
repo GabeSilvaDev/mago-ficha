@@ -4,6 +4,7 @@ import '../models/ficha.dart';
 import '../store/ficha_store.dart';
 import '../theme.dart';
 import '../widgets/dots.dart';
+import '../widgets/layout.dart';
 import '../widgets/retrato.dart';
 
 /// Assistente de criação de personagem — 7 passos.
@@ -207,7 +208,7 @@ class _WizardScreenState extends State<WizardScreen>
               color: Cores.dourado,
             ),
           if (_livre) _avisoEvolucao(),
-          Expanded(child: _paginaAtual()),
+          Expanded(child: Miolo(child: _paginaAtual())),
           _barraInferior(),
         ],
       ),

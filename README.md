@@ -283,6 +283,15 @@ existe no aparelho, pergunta o que fazer: duplicar, substituir ou pular.
 
 ---
 
+## No celular e no PC
+
+A mesma build serve os dois: em tela estreita a navegação fica embaixo, e a
+partir de 900px ela vira barra lateral e o conteúdo para de esticar de ponta a
+ponta — ler uma ficha atravessando um monitor de 27" é desconfortável.
+
+No iPhone, a página declara `viewport` com `viewport-fit=cover`: sem isso o
+Safari desenha tudo como se a tela tivesse 980px e encolhe o app inteiro.
+
 ## Instalar
 
 ### Android

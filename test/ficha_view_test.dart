@@ -30,6 +30,23 @@ void main() {
     await FichaStore.salvar(ficha);
   });
 
+  testWidgets('cancelar não exclui', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: FichaViewScreen(fichaId: ficha.id)));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Mais ações'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Excluir ficha'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.widgetWithText(TextButton, 'Cancelar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(FichaStore.porId(ficha.id), isNotNull);
+  });
+
   testWidgets('Esfera acima de 5 mostra a especialização na aba Esferas',
       (tester) async {
     await tester.pumpWidget(MaterialApp(home: FichaViewScreen(fichaId: ficha.id)));
@@ -40,5 +57,33 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Teleportes'), findsOneWidget);
+  });
+
+  // ÚLTIMO DO ARQUIVO DE PROPÓSITO: excluir dispara escrita real de disco de
+  // dentro do fake-async do teste de widget. A operação fica pendente e trava
+  // o `setUp` do teste seguinte — com este por último, não há teste seguinte.
+  testWidgets('dá para excluir a ficha pela própria tela', (tester) async {
+    // NPC só é alcançável pela galeria, que abre esta tela: sem exclusão aqui,
+    // não existe jeito de apagar um NPC.
+    expect(FichaStore.porId(ficha.id), isNotNull);
+
+    await tester.pumpWidget(MaterialApp(home: FichaViewScreen(fichaId: ficha.id)));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Mais ações'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Excluir ficha'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.widgetWithText(TextButton, 'Excluir'));
+    await tester.pump();
+    // o excluir dispara escrita real de disco de dentro do fake-async; sem
+    // deixar a I/O terminar, ela fica pendente e trava o teste seguinte
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(FichaStore.porId(ficha.id), isNull);
   });
 }
