@@ -180,8 +180,10 @@ apagar ao sair, e não só desligar o espelho.
 
 ## Fase 1 — Mesa e identidade
 
-**Entrar.** Login anônimo. A identidade mora no aparelho: quem reinstala vira um
-membro novo e o mestre reconecta com um toque. Ninguém cria conta nem senha.
+**Entrar.** Login anônimo. A identidade mora no aparelho: quem reinstala entra
+de novo com o código e publica a ficha outra vez — como a ficha é dele e mora
+no aparelho dele, não há nada para o mestre reconectar. Ninguém cria conta nem
+senha.
 
 **Código.** 8 caracteres em alfabeto sem ambiguidade (sem `O`/`0`, sem `I`/`1`),
 formato `MAGO-4K7P`, feito para ser ditado em voz alta. Um QR opcional na mesma
