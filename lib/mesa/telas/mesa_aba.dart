@@ -422,10 +422,9 @@ class _MesaAbaState extends State<MesaAba> {
             ),
             const FaixaSecao('Quem está na mesa'),
             _membros(estado, souMestre),
-            if (souMestre) ...[
-              const FaixaSecao('Fichas da sessão'),
+            // o painel traz as próprias faixas: mural e fichas da sessão
+            if (souMestre)
               PainelMestre(servico: _servico, mesaId: estado.mesaId),
-            ],
             const FaixaSecao('Minha ficha nesta mesa'),
             _minhaFicha(estado),
             const SizedBox(height: 16),
