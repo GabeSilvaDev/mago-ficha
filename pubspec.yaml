@@ -34,6 +34,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Vem junto com o flutter_test, mas importar sem declarar é aviso do lint:
+  # o teste do espelho precisa avançar o relógio na mão.
+  fake_async: ^1.3.1
   # Gera o icone do app (Android) a partir de assets/icon/icon.png
   flutter_launcher_icons: ^0.14.3
 
