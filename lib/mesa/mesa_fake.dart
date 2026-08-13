@@ -130,12 +130,20 @@ class MesaFake implements MesaService {
     return mesa;
   }
 
+  // Observar exige login como no Firestore de verdade, onde `instance` sem
+  // `Firebase.initializeApp` estoura. Sem esta exigência o fake deixa passar
+  // a tela que assina o stream antes de entrar.
   @override
-  Stream<Mesa?> observarMesa(String mesaId) => mundo.streamMesa(mesaId);
+  Stream<Mesa?> observarMesa(String mesaId) {
+    _exigeLogin();
+    return mundo.streamMesa(mesaId);
+  }
 
   @override
-  Stream<List<Membro>> observarMembros(String mesaId) =>
-      mundo.streamMembros(mesaId);
+  Stream<List<Membro>> observarMembros(String mesaId) {
+    _exigeLogin();
+    return mundo.streamMembros(mesaId);
+  }
 
   @override
   Future<void> baterPonto(String mesaId) async {
@@ -233,8 +241,10 @@ class MesaFake implements MesaService {
   }
 
   @override
-  Stream<List<FichaNaMesa>> observarFichas(String mesaId) =>
-      mundo.streamFichas(mesaId).map((_) => _visiveis(mesaId));
+  Stream<List<FichaNaMesa>> observarFichas(String mesaId) {
+    _exigeLogin();
+    return mundo.streamFichas(mesaId).map((_) => _visiveis(mesaId));
+  }
 
   @override
   Stream<FichaNaMesa?> observarFicha(String mesaId, String donoUid) =>

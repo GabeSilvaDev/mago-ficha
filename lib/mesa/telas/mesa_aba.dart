@@ -34,17 +34,32 @@ class _MesaAbaState extends State<MesaAba> {
   bool _ocupado = false;
   EspelhoFicha? _espelho;
 
+  /// A sessão online está de pé (login feito) e dá para observar a mesa.
+  bool _sessaoPronta = false;
+  String? _erroSessao;
+
   @override
   void initState() {
     super.initState();
     _servico = widget.servico ?? MesaFirestore();
-    final estado = MesaStore.atual;
-    if (estado != null) {
+    if (MesaStore.atual != null) _religar();
+  }
+
+  /// O app reabriu já dentro de uma mesa. O estado veio do disco, mas a
+  /// sessão online não existe ainda: sem refazer o login, observar a mesa
+  /// estoura porque o Firebase sequer foi inicializado.
+  Future<void> _religar() async {
+    try {
+      await _servico.entrarAnonimo();
+      final estado = MesaStore.atual;
+      if (!mounted || estado == null) return;
       _ligarPonto();
-      // o app pode ter sido fechado dentro da mesa: religa o espelho da ficha
-      // que já estava publicada
       final fichaId = estado.fichaPublicadaId;
       if (fichaId != null) _ligarEspelho(estado.mesaId, fichaId);
+      setState(() => _sessaoPronta = true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _erroSessao = '$e');
     }
   }
 
@@ -114,6 +129,7 @@ class _MesaAbaState extends State<MesaAba> {
         papel: PapelMesa.mestre,
       ));
       _ligarPonto();
+      _sessaoPronta = true;
     });
   }
 
@@ -131,6 +147,7 @@ class _MesaAbaState extends State<MesaAba> {
         papel: mesa.mestreUid == uid ? PapelMesa.mestre : PapelMesa.jogador,
       ));
       _ligarPonto();
+      _sessaoPronta = true;
     });
   }
 
@@ -241,7 +258,58 @@ class _MesaAbaState extends State<MesaAba> {
   Widget build(BuildContext context) {
     final estado = MesaStore.atual;
     if (estado == null) return _semMesa();
+    if (_erroSessao != null) return _semConexao(estado);
+    if (!_sessaoPronta) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return _naMesa(estado);
+  }
+
+  /// Estava numa mesa e o app voltou sem internet. O resto do app continua
+  /// funcionando; aqui só dá para esperar ou sair da mesa.
+  Widget _semConexao(EstadoMesa estado) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined,
+                size: 48, color: Cores.indigoClaro),
+            const SizedBox(height: 12),
+            Text(
+              'Não consegui conectar à mesa "${estado.nome}".\n'
+              'Suas fichas continuam aqui do mesmo jeito.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(_erroSessao!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => setState(() {
+                _erroSessao = null;
+                _religar();
+              }),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar de novo'),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () async {
+                _desligarPonto();
+                _desligarEspelho();
+                await MesaStore.limpar();
+                if (mounted) setState(() => _erroSessao = null);
+              },
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Sair da mesa'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _semMesa() {

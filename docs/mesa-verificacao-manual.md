@@ -49,6 +49,17 @@ Chame de **A** o mestre e **B** o jogador. Marque o resultado ao lado.
 O item 9 é o mais importante: é a promessa de que o app continua offline para
 quem não usa mesa.
 
+## Fase 2 — ficha espelhada
+
+| # | O quê | Esperado | OK? |
+|---|---|---|---|
+| 10 | B publica a ficha na aba Mesa | ela aparece no painel de A com Arete, FdV e vitalidade | |
+| 11 | B marca dano | em poucos segundos o nível muda na tela de A, sem A tocar em nada | |
+| 12 | C (outro jogador) entra e publica a ficha dele | C **não** vê a ficha de B em lugar nenhum | |
+| 13 | A abre a ficha de B | sem lápis de editar; os `+`/`−` não respondem | |
+| 14 | B sai da mesa | a ficha some do painel de A; no aparelho de B o dano continua marcado | |
+| 15 | A fecha a mesa com fichas publicadas | some tudo; ninguém fica com cópia órfã no Firestore | |
+
 ## Simulador de regras
 
 Console do Firebase → **Firestore Database** → aba **Regras** → **Simulador**.
