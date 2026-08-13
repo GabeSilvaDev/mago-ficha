@@ -283,6 +283,43 @@ existe no aparelho, pergunta o que fazer: duplicar, substituir ou pular.
 
 ---
 
+## Mesa online (opcional)
+
+O app é offline e continua sendo. A mesa é um extra que só existe enquanto
+alguém quer: sem entrar em mesa nenhuma, nada de rede acontece — criar ficha,
+PDF e backup funcionam em modo avião do mesmo jeito.
+
+**Como funciona numa sessão.** O mestre cria a mesa e dita um código de seis
+caracteres (`MAGO-XXXX`). Quem entra vira jogador e aparece na lista, com uma
+bolinha que fica cinza depois de 90 segundos sem sinal.
+
+O jogador escolhe **publicar uma ficha**. A partir daí, o que ele marca —
+dano, Força de Vontade, Quintessência, Paradoxo, experiência — chega ao mestre
+em segundos. As escritas são agrupadas numa janela de 2s: marcar dano salva a
+ficha a cada toque, e mandar toque a toque seria uma escrita por toque.
+
+**O mestre só olha.** A ficha publicada abre para ele sem lápis e com os `+`/`−`
+mortos; a única exceção é baixar o PDF, que não escreve nada. Quem garante isso
+não é a tela, é a regra do Firestore: só o dono escreve na própria ficha. As
+fichas da sessão aparecem também na galeria do narrador, marcadas como
+`na mesa · só leitura`.
+
+**Um jogador não vê a ficha do outro.** Só o dono e o mestre.
+
+**Mural.** O mestre escolhe uma imagem e ela abre em tela cheia no aparelho de
+todo mundo na mesa, com o mesmo modo mostrar do caderno. A imagem vai em base64
+dentro do documento — sem Firebase Storage, que hoje exige plano pago —, então o
+app reduz até caber com folga no limite de 1 MiB por documento.
+
+**Sair volta tudo ao normal.** Tirar a ficha da mesa, sair ou o mestre fechar a
+mesa: as cópias na nuvem somem e a ficha local continua com tudo que foi marcado
+durante a sessão.
+
+O roteiro de verificação manual — o que não dá para testar sem dois aparelhos de
+verdade — está em [`docs/mesa-verificacao-manual.md`](docs/mesa-verificacao-manual.md).
+
+---
+
 ## No celular e no PC
 
 A mesma build serve os dois: em tela estreita a navegação fica embaixo, e a

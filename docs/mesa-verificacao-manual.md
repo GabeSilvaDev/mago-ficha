@@ -60,6 +60,18 @@ quem não usa mesa.
 | 14 | B sai da mesa | a ficha some do painel de A; no aparelho de B o dano continua marcado | |
 | 15 | A fecha a mesa com fichas publicadas | some tudo; ninguém fica com cópia órfã no Firestore | |
 
+## Fase 3 — mural de imagens
+
+| # | O quê | Esperado | OK? |
+|---|---|---|---|
+| 16 | A põe uma foto no mural | em segundos ela abre em tela cheia no aparelho de B | |
+| 17 | B toca na imagem | o modo mostrar funciona igual ao do caderno | |
+| 18 | A escolhe uma foto direto da câmera (vários MB) | o app reduz e envia sem erro, com indicador enquanto sobe | |
+| 19 | A tira do mural | B fecha a tela e ela não reabre sozinha | |
+| 20 | B fecha a imagem e alguém entra na mesa | a imagem **não** reabre: só o que é novo abre | |
+| 21 | B tenta `set` em `mesas/{id}/mural/atual` (simulador de regras) | **negado** | |
+| 22 | A fecha a mesa com imagem no mural | o mural some junto, sem documento órfão | |
+
 ## Simulador de regras
 
 Console do Firebase → **Firestore Database** → aba **Regras** → **Simulador**.
