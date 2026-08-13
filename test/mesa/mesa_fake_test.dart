@@ -112,19 +112,64 @@ void main() {
     expect(() => jogador.trocarCodigo(mesa.id), throwsA(isA<SemPermissao>()));
   });
 
-  test('fechar mesa: quem observa recebe null', () async {
+  test('apagar mesa: quem observa recebe null', () async {
     final (mestre, mesa) = await mesaPronta();
 
-    await mestre.fecharMesa(mesa.id);
+    await mestre.apagarMesa(mesa.id);
 
     expect(await mestre.observarMesa(mesa.id).first, isNull);
   });
 
-  test('só o mestre fecha', () async {
+  test('só o mestre apaga', () async {
     final (mestre, mesa) = await mesaPronta();
     final jogador = await jogadorNa(mestre, mesa);
 
-    expect(() => jogador.fecharMesa(mesa.id), throwsA(isA<SemPermissao>()));
+    expect(() => jogador.apagarMesa(mesa.id), throwsA(isA<SemPermissao>()));
+  });
+
+  test('encerrar sessão esvazia a mesa mas ela continua existindo', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    await kaue.publicarFicha(mesa.id, {'nome': 'Cotoia'}, 'Cotoia');
+    await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    await mestre.encerrarSessao(mesa.id);
+
+    // a mesa e a galeria sobrevivem
+    expect(await mestre.observarMesa(mesa.id).first, isNotNull);
+    expect((await mestre.observarGaleria(mesa.id).first).length, 1);
+    // ninguém ficou dentro, e nenhuma ficha ficou publicada
+    expect(await mestre.observarMembros(mesa.id).first, isEmpty);
+    expect(await mestre.observarFichas(mesa.id).first, isEmpty);
+  });
+
+  test('depois de encerrar, dá para entrar de novo com o mesmo código',
+      () async {
+    final (mestre, mesa) = await mesaPronta();
+    await mestre.encerrarSessao(mesa.id);
+
+    final devolta = await mestre.entrarPorCodigo(mesa.codigo, 'Gabriel');
+
+    expect(devolta.id, mesa.id);
+    expect(devolta.mestreUid, 'u-mestre');
+  });
+
+  test('apagar mesa leva tudo junto', () async {
+    final (mestre, mesa) = await mesaPronta();
+    await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    await mestre.apagarMesa(mesa.id);
+
+    expect(await mestre.observarMesa(mesa.id).first, isNull);
+    expect(mestre.mundo.galeria[mesa.id], isNull);
+  });
+
+  test('só o mestre encerra e só o mestre apaga', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+
+    expect(() => kaue.encerrarSessao(mesa.id), throwsA(isA<SemPermissao>()));
+    expect(() => kaue.apagarMesa(mesa.id), throwsA(isA<SemPermissao>()));
   });
 
   test('bater ponto atualiza o visto', () async {
@@ -219,12 +264,12 @@ void main() {
     expect(await mestre.observarMural(mesa.id).first, isNull);
   });
 
-  test('fechar a mesa leva o mural junto', () async {
+  test('apagar a mesa leva o mural junto', () async {
     final (mestre, mesa) = await mesaPronta();
     final id = await mestre.guardarNaGaleria(mesa.id, 'AAAA', 'mini', 'mapa');
     await mestre.mostrarAgora(mesa.id, id);
 
-    await mestre.fecharMesa(mesa.id);
+    await mestre.apagarMesa(mesa.id);
 
     expect(mestre.mundo.mural[mesa.id], isNull);
   });

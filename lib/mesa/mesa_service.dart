@@ -111,7 +111,7 @@ abstract class MesaService {
   /// Entrar de novo na mesma mesa é idempotente.
   Future<Mesa> entrarPorCodigo(String codigo, String meuNome);
 
-  /// Emite null quando a mesa deixa de existir (mestre fechou).
+  /// Emite null quando a mesa deixa de existir (mestre apagou).
   Stream<Mesa?> observarMesa(String mesaId);
 
   Stream<List<Membro>> observarMembros(String mesaId);
@@ -128,8 +128,13 @@ abstract class MesaService {
   /// Só o mestre. Gera um código novo e invalida o anterior.
   Future<void> trocarCodigo(String mesaId);
 
-  /// Só o mestre. Apaga a mesa inteira.
-  Future<void> fecharMesa(String mesaId);
+  /// Só o mestre. Esvazia a mesa: tira todos os membros e as fichas
+  /// publicadas. A mesa em si, o código, a chave e a galeria continuam de pé
+  /// — é assim que a mesma crônica se reencontra no sábado seguinte.
+  Future<void> encerrarSessao(String mesaId);
+
+  /// Só o mestre. Apaga a mesa inteira, para sempre.
+  Future<void> apagarMesa(String mesaId);
 
   /// Publica (ou atualiza) a MINHA ficha nesta mesa.
   Future<void> publicarFicha(

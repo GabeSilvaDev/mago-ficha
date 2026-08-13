@@ -293,29 +293,35 @@ class MesaFirestore implements MesaService {
   }
 
   @override
-  Future<void> fecharMesa(String mesaId) async {
-    final doc = await _mesa(mesaId).get();
-    if (!doc.exists) return;
-    final codigo = doc.data()!['codigo'] as String;
+  Future<void> encerrarSessao(String mesaId) async {
     try {
-      // subcoleção não some junto com o pai: apaga o que está dentro antes
-      await _mural(mesaId).delete();
       final fichas = await _mesa(mesaId).collection('fichas').get();
       for (final f in fichas.docs) {
         await f.reference.delete();
-      }
-      final galeria = await _galeria(mesaId).get();
-      for (final g in galeria.docs) {
-        await g.reference.delete();
-      }
-      final imagens = await _imagens(mesaId).get();
-      for (final i in imagens.docs) {
-        await i.reference.delete();
       }
       final membros = await _mesa(mesaId).collection('membros').get();
       for (final m in membros.docs) {
         await m.reference.delete();
       }
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw SemPermissao();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> apagarMesa(String mesaId) async {
+    final doc = await _mesa(mesaId).get();
+    if (!doc.exists) return;
+    final codigo = doc.data()!['codigo'] as String;
+    try {
+      for (final c in ['galeria', 'imagens', 'fichas', 'membros', 'privado']) {
+        final docs = await _mesa(mesaId).collection(c).get();
+        for (final d in docs.docs) {
+          await d.reference.delete();
+        }
+      }
+      await _mural(mesaId).delete();
       await _db.collection('codigos').doc(codigo).delete();
       await _mesa(mesaId).delete();
     } on FirebaseException catch (e) {

@@ -194,7 +194,7 @@ class _MesaAbaState extends State<MesaAba> {
     );
     if (ok != true) return;
     await _comEspera(() async {
-      await _servico.fecharMesa(mesaId);
+      await _servico.apagarMesa(mesaId);
       _desligarPonto();
       _desligarEspelho();
       await MesaStore.limpar();

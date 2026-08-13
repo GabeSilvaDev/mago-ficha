@@ -215,16 +215,28 @@ class MesaFake implements MesaService {
     mundo.notificar(mesaId);
   }
 
+  // Esvazia a mesa mas não toca em `mundo.mesas`: o documento da mesa (e o
+  // `mestreUid` nele) sobrevive, e é só por isso que o mestre continua
+  // mandando na mesa depois de encerrar a sessão.
   @override
-  Future<void> fecharMesa(String mesaId) async {
+  Future<void> encerrarSessao(String mesaId) async {
+    _exigeLogin();
+    _exigeMestre(mesaId);
+    mundo.membros.remove(mesaId);
+    mundo.fichas.remove(mesaId);
+    mundo.notificar(mesaId);
+  }
+
+  @override
+  Future<void> apagarMesa(String mesaId) async {
     _exigeLogin();
     _exigeMestre(mesaId);
     mundo.mesas.remove(mesaId);
     mundo.membros.remove(mesaId);
     mundo.fichas.remove(mesaId);
-    mundo.mural.remove(mesaId);
     mundo.galeria.remove(mesaId);
     mundo.cheias.remove(mesaId);
+    mundo.mural.remove(mesaId);
     mundo.notificar(mesaId);
   }
 

@@ -100,11 +100,11 @@ void main() {
     expect(find.text('Guardião'), findsOneWidget);
   });
 
-  testWidgets('fechar a mesa tira a ficha da galeria', (t) async {
+  testWidgets('apagar a mesa tira a ficha da galeria', (t) async {
     await abrir(t);
     expect(find.text('Cotoia'), findsOneWidget);
 
-    await mestre.fecharMesa(mesaId);
+    await mestre.apagarMesa(mesaId);
     await t.pump();
     await t.pump(const Duration(milliseconds: 400));
 
