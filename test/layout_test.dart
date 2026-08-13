@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mago_a_ascensao/data/game_data.dart';
+import 'package:mago_a_ascensao/mesa/mesa_store.dart';
 import 'package:mago_a_ascensao/models/ficha.dart';
 import 'package:mago_a_ascensao/screens/home_screen.dart';
 import 'package:mago_a_ascensao/screens/wizard_screen.dart';
@@ -25,6 +26,7 @@ void main() {
     await ImagemStore.init();
     await NarradorStore.init();
     await NotaStore.init();
+    await MesaStore.init();
   });
 
   setUp(() async {
