@@ -63,6 +63,9 @@ void main() {
 
     expect(find.text('Publicar uma ficha'), findsOneWidget);
 
+    // o mural entrou antes do cartão da ficha: o botão desceu na lista
+    await t.ensureVisible(find.text('Publicar uma ficha'));
+    await t.pump();
     await t.tap(find.text('Publicar uma ficha'));
     await t.pump();
     await t.tap(find.text('Cassandra Vex').last);

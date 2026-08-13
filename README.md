@@ -307,7 +307,9 @@ fichas da sessão aparecem também na galeria do narrador, marcadas como
 **Um jogador não vê a ficha do outro.** Só o dono e o mestre.
 
 **Mural.** O mestre escolhe uma imagem e ela abre em tela cheia no aparelho de
-todo mundo na mesa, com o mesmo modo mostrar do caderno. A imagem vai em base64
+todo mundo na mesa, com o mesmo modo mostrar do caderno. Depois de fechada, ela
+continua na aba Mesa enquanto estiver no mural: quem quiser olhar de novo abre
+de novo, sem depender de o mestre mostrar outra vez. A imagem vai em base64
 dentro do documento — sem Firebase Storage, que hoje exige plano pago —, então o
 app reduz até caber com folga no limite de 1 MiB por documento.
 

@@ -56,6 +56,9 @@ void main() {
     expect(find.text('Sombras'), findsOneWidget);
     expect(find.byTooltip('Trocar código'), findsNothing);
     expect(find.text('Fechar mesa'), findsNothing);
+    // mural e cartão da ficha empurram o rodapé para fora da viewport
+    await t.drag(find.byType(ListView), const Offset(0, -400));
+    await assentar(t);
     expect(find.text('Sair da mesa'), findsOneWidget);
     // vê os dois membros, com os papéis certos
     expect(find.text('mestre'), findsOneWidget);

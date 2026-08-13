@@ -68,6 +68,7 @@ quem não usa mesa.
 | 17 | B toca na imagem | o modo mostrar funciona igual ao do caderno | |
 | 18 | A escolhe uma foto direto da câmera (vários MB) | o app reduz e envia sem erro, com indicador enquanto sobe | |
 | 19 | A tira do mural | B fecha a tela e ela não reabre sozinha | |
+| 19b | B fecha a imagem e volta na aba Mesa | a miniatura continua lá; *Ver em tela cheia* reabre quantas vezes quiser | |
 | 20 | B fecha a imagem e alguém entra na mesa | a imagem **não** reabre: só o que é novo abre | |
 | 21 | B tenta `set` em `mesas/{id}/mural/atual` (simulador de regras) | **negado** | |
 | 22 | A fecha a mesa com imagem no mural | o mural some junto, sem documento órfão | |

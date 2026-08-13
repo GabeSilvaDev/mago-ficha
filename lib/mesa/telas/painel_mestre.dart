@@ -5,177 +5,24 @@ import 'package:flutter/material.dart';
 import '../../data/game_data.dart';
 import '../../models/ficha.dart';
 import '../../screens/ficha_view_screen.dart';
-import '../../store/imagem_store.dart';
 import '../../theme.dart';
-import '../../widgets/retrato.dart';
-import '../imagem_mural.dart';
 import '../mesa_service.dart';
 
-/// O que o mestre vê e controla da sessão: o mural e as fichas publicadas.
+/// As fichas que os jogadores publicaram, ao vivo.
 ///
-/// As fichas são só leitura, sempre. A ficha é do jogador; aqui é a janela
-/// para ela.
-class PainelMestre extends StatefulWidget {
+/// Só leitura, sempre. A ficha é do jogador; aqui é a janela para ela. O
+/// mural mora em `MuralDaMesa`, porque não é só do mestre: todo mundo na mesa
+/// precisa poder reabrir a imagem.
+class PainelMestre extends StatelessWidget {
   final MesaService servico;
   final String mesaId;
 
   const PainelMestre({super.key, required this.servico, required this.mesaId});
 
   @override
-  State<PainelMestre> createState() => _PainelMestreState();
-}
-
-class _PainelMestreState extends State<PainelMestre> {
-  MesaService get servico => widget.servico;
-  String get mesaId => widget.mesaId;
-
-  /// Reduzir uma foto grande e subir leva alguns segundos: sem retorno visual
-  /// o mestre toca de novo e manda a mesma imagem duas vezes.
-  bool _enviando = false;
-
-  void _erro(Object e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-  }
-
-  Future<void> _mostrarImagem() async {
-    if (_enviando) return;
-    final id = await escolherRetrato(context);
-    if (id == null || !mounted) return;
-
-    final legenda = await _pedirLegenda();
-    if (!mounted) return;
-
-    setState(() => _enviando = true);
-    try {
-      final bytes = ImagemStore.bytes(id);
-      if (bytes == null) throw Exception('Não consegui ler a imagem.');
-      await servico.mostrarNoMural(
-          mesaId, ImagemMural.preparar(bytes), legenda ?? '');
-      // a cópia local só existia para chegar até aqui: o mural carrega a sua
-      await ImagemStore.excluir(id);
-    } catch (e) {
-      _erro(e);
-    } finally {
-      if (mounted) setState(() => _enviando = false);
-    }
-  }
-
-  Future<String?> _pedirLegenda() {
-    final campo = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Cores.pergaminho,
-        title: const Text('Legenda (opcional)'),
-        content: TextField(
-          controller: campo,
-          autofocus: true,
-          decoration: const InputDecoration(
-              hintText: 'Ex.: o mapa que vocês acham na mesa'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, ''),
-              child: const Text('Sem legenda')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, campo.text.trim()),
-            child: const Text('Mostrar', style: TextStyle(color: Cores.indigo)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _tirar() async {
-    try {
-      await servico.limparMural(mesaId);
-    } catch (e) {
-      _erro(e);
-    }
-  }
-
-  /// O mural: uma imagem por vez, que abre sozinha para todo mundo na mesa.
-  Widget _mural() {
-    return StreamBuilder<ItemMural?>(
-      stream: servico.observarMural(mesaId),
-      builder: (context, snap) {
-        final item = snap.data;
-        if (_enviando) {
-          return const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-        if (item == null) {
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'A imagem abre em tela cheia no aparelho de todo mundo '
-                    'que está na mesa.',
-                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: _mostrarImagem,
-                      icon: const Icon(Icons.image_outlined),
-                      label: const Text('Mostrar imagem para a mesa'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.memory(
-                    base64Decode(item.imagemBase64),
-                    height: 90,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox(
-                      height: 90,
-                      child: Icon(Icons.broken_image_outlined, size: 40),
-                    ),
-                  ),
-                ),
-                if (item.legenda.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(item.legenda,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-                TextButton.icon(
-                  onPressed: _tirar,
-                  icon: const Icon(Icons.visibility_off_outlined, size: 18),
-                  label: const Text('Tirar do mural'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const FaixaSecao('Mural da mesa'),
-        _mural(),
         const FaixaSecao('Fichas da sessão'),
         _fichas(),
       ],
