@@ -54,4 +54,47 @@ void main() {
     expect(mais, isNotEmpty);
     expect(mais.every((b) => b.onPressed == null), isTrue);
   });
+
+  /// O buraco de verdade: o lápis de cada seção abre o wizard, que grava no
+  /// Hive DESTE aparelho. Pelo mestre isso virava uma cópia da ficha do
+  /// jogador na coleção dele, e o jogador não via mudança nenhuma.
+  testWidgets('somente leitura não deixa lápis de seção em aba nenhuma',
+      (t) async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Cotoia';
+
+    await t.pumpWidget(MaterialApp(
+        home: FichaViewScreen(fichaDireta: f, somenteLeitura: true)));
+    await t.pump();
+
+    for (final abaNome in const [
+      'Personagem',
+      'Status',
+      'Atributos & Habilidades',
+      'Esferas',
+      'Vantagens & Defeitos',
+      'Detalhes',
+    ]) {
+      await t.tap(find.text(abaNome));
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      expect(find.byIcon(Icons.edit), findsNothing,
+          reason: 'lápis de seção aberto na aba $abaNome');
+    }
+  });
+
+  /// Sem gravar no Hive: escrita iniciada de dentro do `testWidgets` fica
+  /// pendente e trava o encerramento da suíte.
+  testWidgets('sem somenteLeitura os lápis continuam lá', (t) async {
+    final f = Ficha.criar();
+    f.data['nome'] = 'Cotoia';
+
+    await t.pumpWidget(MaterialApp(home: FichaViewScreen(fichaDireta: f)));
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    expect(find.byIcon(Icons.edit), findsWidgets);
+    expect(
+        find.byTooltip('Editar ficha inteira (todas as etapas)'), findsOneWidget);
+  });
 }

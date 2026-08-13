@@ -62,8 +62,14 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
   VoidCallback? _acao(VoidCallback? f) => widget.somenteLeitura ? null : f;
 
   /// Abre o wizard inteiro (todas as etapas).
+  ///
+  /// A trava de `somenteLeitura` está aqui também, e não só no botão: o wizard
+  /// grava direto no Hive deste aparelho. Se o mestre abrisse a ficha de um
+  /// jogador por ele, gravaria uma cópia na própria coleção e o jogador não
+  /// veria mudança nenhuma — que foi exatamente o que aconteceu quando só o
+  /// botão estava escondido.
   Future<void> _editar() async {
-    if (f == null) return;
+    if (f == null || widget.somenteLeitura) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => WizardScreen(existente: f)),
     );
@@ -78,7 +84,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
   /// aparecem (ex.: o lápis de "Arete & Força de Vontade" abre só os dois).
   Future<void> _editarPasso(int passo,
       {Set<String>? secoes, String? titulo}) async {
-    if (f == null) return;
+    if (f == null || widget.somenteLeitura) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => WizardScreen(
@@ -166,7 +172,18 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
       length: 6,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(ficha.nome.isEmpty ? 'Sem nome' : ficha.nome),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(ficha.nome.isEmpty ? 'Sem nome' : ficha.nome),
+              if (widget.somenteLeitura)
+                const Text(
+                  'ficha do jogador · só leitura',
+                  style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                ),
+            ],
+          ),
           actions: [
             IconButton(
               onPressed: _gerandoPdf ? null : _baixarPdf,
@@ -230,7 +247,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
           children: [
             // 1 — Personagem
             aba([
-              FaixaSecao('Identidade', onEditar: () => _editarPasso(0)),
+              FaixaSecao('Identidade', onEditar: _acao(() => _editarPasso(0))),
               _cardIdentidade(ficha),
               _cardTipo(ficha),
               if (NarradorStore.campos().isNotEmpty) ...[
@@ -241,13 +258,13 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             // 2 — Status (trackers de jogo)
             aba([
               FaixaSecao('Arete & Força de Vontade',
-                  onEditar: () => _editarPasso(5,
+                  onEditar: _acao(() => _editarPasso(5,
                       secoes: {'arete', 'forcaVontade'},
-                      titulo: 'Arete & Força de Vontade')),
+                      titulo: 'Arete & Força de Vontade'))),
               _cardAreteFdv(ficha),
               FaixaSecao('Quintessência & Paradoxo',
-                  onEditar: () => _editarPasso(5,
-                      secoes: {'quintessencia'}, titulo: 'Quintessência')),
+                  onEditar: _acao(() => _editarPasso(5,
+                      secoes: {'quintessencia'}, titulo: 'Quintessência'))),
               _cardQuintParadoxo(ficha),
               const FaixaSecao('Vitalidade'),
               _cardVitalidade(ficha),
@@ -256,10 +273,10 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             ]),
             // 3 — Atributos & Habilidades
             aba([
-              FaixaSecao('Atributos', onEditar: () => _editarPasso(1)),
+              FaixaSecao('Atributos', onEditar: _acao(() => _editarPasso(1))),
               _bloco(GameData.atributos, ficha.atributoFinal,
                   ficha.atributosPrioridade),
-              FaixaSecao('Habilidades', onEditar: () => _editarPasso(2)),
+              FaixaSecao('Habilidades', onEditar: _acao(() => _editarPasso(2))),
               _bloco(GameData.habilidades, ficha.habilidadeFinal,
                   ficha.habilidadesPrioridade,
                   sufixos: _sufixosEspecializacao(ficha),
@@ -267,24 +284,24 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             ]),
             // 4 — Esferas
             aba([
-              FaixaSecao('Esferas', onEditar: () => _editarPasso(3)),
+              FaixaSecao('Esferas', onEditar: _acao(() => _editarPasso(3))),
               _cardEsferas(ficha),
             ]),
             // 5 — Vantagens & Defeitos
             aba([
               FaixaSecao('Antecedentes & Qualidades',
-                  onEditar: () => _editarPasso(4,
+                  onEditar: _acao(() => _editarPasso(4,
                       secoes: {'positivos'},
-                      titulo: 'Antecedentes & Qualidades')),
+                      titulo: 'Antecedentes & Qualidades'))),
               _cardPositivos(ficha),
               FaixaSecao('Defeitos',
-                  onEditar: () => _editarPasso(4,
-                      secoes: {'defeitos'}, titulo: 'Defeitos')),
+                  onEditar: _acao(() => _editarPasso(4,
+                      secoes: {'defeitos'}, titulo: 'Defeitos'))),
               _cardDefeitos(ficha),
             ]),
             // 6 — Detalhes
             aba([
-              FaixaSecao('Detalhes', onEditar: () => _editarPasso(6)),
+              FaixaSecao('Detalhes', onEditar: _acao(() => _editarPasso(6))),
               if (_temDetalhes(ficha))
                 _cardDetalhes(ficha)
               else
