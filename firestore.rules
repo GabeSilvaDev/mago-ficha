@@ -1,0 +1,64 @@
+rules_version = '2';
+
+// Não existe servidor neste projeto: estas regras SÃO a segurança da mesa.
+// Elas cabem em uma tela de propósito — regra que ninguém lê inteira é regra
+// que ninguém audita.
+//
+// Publicar:  firebase deploy --only firestore:rules --project <id>
+// Conferir:  docs/mesa-verificacao-manual.md
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function logado()  { return request.auth != null; }
+    function uid()     { return request.auth.uid; }
+    function mesa(id)  { return get(/databases/$(db)/documents/mesas/$(id)).data; }
+    function souMestre(id) { return logado() && mesa(id).mestreUid == uid(); }
+    function souMembro(id) {
+      return logado() &&
+        exists(/databases/$(db)/documents/mesas/$(id)/membros/$(uid()));
+    }
+
+    // Resolver código -> mesa. Qualquer logado lê, porque quem vai entrar
+    // ainda não é membro. É por isso que esta coleção existe separada: se a
+    // busca fosse uma query em `mesas`, daria para varrer todas as mesas.
+    // Só o mestre da mesa apontada cria e apaga — por isso a mesa é criada
+    // primeiro e o código depois.
+    match /codigos/{codigo} {
+      allow read: if logado();
+      allow create: if logado() &&
+        get(/databases/$(db)/documents/mesas/$(request.resource.data.mesaId))
+          .data.mestreUid == uid();
+      allow delete: if logado() &&
+        get(/databases/$(db)/documents/mesas/$(resource.data.mesaId))
+          .data.mestreUid == uid();
+      allow update: if false;
+    }
+
+    match /mesas/{mesaId} {
+      allow read:   if souMembro(mesaId);
+      allow create: if logado() && request.resource.data.mestreUid == uid();
+      allow update, delete: if souMestre(mesaId);
+
+      match /membros/{membroUid} {
+        allow read: if souMembro(mesaId);
+        // entrar e bater ponto: só o próprio
+        allow create, update: if logado() && membroUid == uid();
+        // sair (o próprio) ou ser removido (o mestre)
+        allow delete: if logado() && (membroUid == uid() || souMestre(mesaId));
+      }
+
+      // Fase 2. A ficha do jogador: ele e o mestre. Mais ninguém — nem os
+      // outros jogadores da mesma mesa. Escrita só do dono: o mestre lê.
+      match /fichas/{donoUid} {
+        allow read:  if logado() && (donoUid == uid() || souMestre(mesaId));
+        allow write: if logado() && donoUid == uid();
+      }
+
+      // Fase 3. Mural de imagens: todos leem, só o mestre escreve.
+      match /mural/{doc} {
+        allow read:  if souMembro(mesaId);
+        allow write: if souMestre(mesaId);
+      }
+    }
+  }
+}
