@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'data/game_data.dart';
 import 'store/ficha_store.dart';
+import 'mesa/mesa_store.dart';
 import 'store/imagem_store.dart';
 import 'store/narrador_store.dart';
 import 'store/nota_store.dart';
@@ -14,6 +15,9 @@ Future<void> main() async {
   await ImagemStore.init();
   await NarradorStore.init();
   await NotaStore.init();
+  // só o estado local de "estou na mesa X": abrir a box é leitura de disco,
+  // não conexão. O Firebase continua desligado até alguém entrar numa mesa.
+  await MesaStore.init();
   // imagem que ninguém mais referencia (ficha ou caderno apagado) não fica
   // ocupando espaço para sempre
   await ImagemStore.limpar(
