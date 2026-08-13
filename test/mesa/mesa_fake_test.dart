@@ -193,26 +193,26 @@ void main() {
     final (mestre, mesa) = await mesaPronta();
     final kaue = await jogadorNa(mestre, mesa);
 
-    await mestre.mostrarNoMural(mesa.id, 'AAAA', 'mapa da estação');
+    final id = await mestre.guardarNaGaleria(mesa.id, 'AAAA', 'mini', 'mapa da estação');
+    await mestre.mostrarAgora(mesa.id, id);
 
     final visto = await kaue.observarMural(mesa.id).first;
-    expect(visto!.imagemBase64, 'AAAA');
-    expect(visto.legenda, 'mapa da estação');
-    expect(visto.porUid, 'u-mestre');
+    expect(visto!.imagemId, id);
   });
 
   test('jogador não escreve no mural', () async {
     final (mestre, mesa) = await mesaPronta();
     final kaue = await jogadorNa(mestre, mesa);
+    final id = await mestre.guardarNaGaleria(mesa.id, 'AAAA', 'mini', 'mapa');
 
-    expect(() => kaue.mostrarNoMural(mesa.id, 'AAAA', 'tentativa'),
-        throwsA(isA<SemPermissao>()));
+    expect(() => kaue.mostrarAgora(mesa.id, id), throwsA(isA<SemPermissao>()));
     expect(() => kaue.limparMural(mesa.id), throwsA(isA<SemPermissao>()));
   });
 
   test('limpar mural: volta a ser null', () async {
     final (mestre, mesa) = await mesaPronta();
-    await mestre.mostrarNoMural(mesa.id, 'AAAA', '');
+    final id = await mestre.guardarNaGaleria(mesa.id, 'AAAA', 'mini', '');
+    await mestre.mostrarAgora(mesa.id, id);
 
     await mestre.limparMural(mesa.id);
 
@@ -221,11 +221,94 @@ void main() {
 
   test('fechar a mesa leva o mural junto', () async {
     final (mestre, mesa) = await mesaPronta();
-    await mestre.mostrarNoMural(mesa.id, 'AAAA', 'mapa');
+    final id = await mestre.guardarNaGaleria(mesa.id, 'AAAA', 'mini', 'mapa');
+    await mestre.mostrarAgora(mesa.id, id);
 
     await mestre.fecharMesa(mesa.id);
 
     expect(mestre.mundo.mural[mesa.id], isNull);
+  });
+
+  test('galeria acumula em vez de sobrescrever', () async {
+    final (mestre, mesa) = await mesaPronta();
+
+    await mestre.guardarNaGaleria(mesa.id, 'CHEIA1', 'MINI1', 'mapa');
+    await mestre.guardarNaGaleria(mesa.id, 'CHEIA2', 'MINI2', 'retrato');
+
+    final itens = await mestre.observarGaleria(mesa.id).first;
+    expect(itens.length, 2);
+    expect(itens.map((i) => i.legenda), containsAll(['mapa', 'retrato']));
+  });
+
+  test('galeria vem com a mais recente primeiro', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final t0 = DateTime(2026, 8, 1, 20);
+    mestre.relogio = () => t0;
+    await mestre.guardarNaGaleria(mesa.id, 'C1', 'M1', 'primeira');
+    mestre.relogio = () => t0.add(const Duration(hours: 1));
+    await mestre.guardarNaGaleria(mesa.id, 'C2', 'M2', 'segunda');
+
+    final itens = await mestre.observarGaleria(mesa.id).first;
+    expect(itens.first.legenda, 'segunda');
+  });
+
+  test('jogador lê a galeria mas não escreve nela', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    expect((await kaue.observarGaleria(mesa.id).first).single.legenda, 'mapa');
+    expect(() => kaue.guardarNaGaleria(mesa.id, 'X', 'Y', 'tentativa'),
+        throwsA(isA<SemPermissao>()));
+  });
+
+  test('imagem cheia só é buscada quando pedida', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final id = await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    final itens = await mestre.observarGaleria(mesa.id).first;
+    expect(itens.single.miniaturaBase64, 'MINI');
+    expect(await mestre.imagemCheia(mesa.id, id), 'CHEIA');
+  });
+
+  test('apagar tira da galeria e some com a imagem cheia', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final id = await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    await mestre.apagarDaGaleria(mesa.id, id);
+
+    expect(await mestre.observarGaleria(mesa.id).first, isEmpty);
+    expect(await mestre.imagemCheia(mesa.id, id), isNull);
+  });
+
+  test('só o mestre apaga da galeria', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    final id = await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    expect(() => kaue.apagarDaGaleria(mesa.id, id),
+        throwsA(isA<SemPermissao>()));
+  });
+
+  test('mostrar agora aponta o mural para a imagem da galeria', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final kaue = await jogadorNa(mestre, mesa);
+    final id = await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    await mestre.mostrarAgora(mesa.id, id);
+
+    final visto = await kaue.observarMural(mesa.id).first;
+    expect(visto!.imagemId, id);
+  });
+
+  test('apagar a imagem em destaque limpa o mural', () async {
+    final (mestre, mesa) = await mesaPronta();
+    final id = await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+    await mestre.mostrarAgora(mesa.id, id);
+
+    await mestre.apagarDaGaleria(mesa.id, id);
+
+    expect(await mestre.observarMural(mesa.id).first, isNull);
   });
 
   test('sair da mesa despublica a ficha', () async {

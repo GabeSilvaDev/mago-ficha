@@ -43,33 +43,53 @@ class FichaNaMesa {
       };
 }
 
-/// O que está no mural da mesa agora.
-class ItemMural {
-  final String imagemBase64;
+/// Uma imagem na galeria da mesa, do jeito leve: sem a imagem cheia.
+class ItemGaleria {
+  final String id;
   final String legenda;
   final String porUid;
+  final String miniaturaBase64;
   final DateTime em;
 
-  const ItemMural({
-    required this.imagemBase64,
+  const ItemGaleria({
+    required this.id,
     required this.legenda,
     required this.porUid,
+    required this.miniaturaBase64,
     required this.em,
   });
 
-  factory ItemMural.fromJson(Map<String, dynamic> j) => ItemMural(
-        imagemBase64: (j['imagem'] ?? '') as String,
+  factory ItemGaleria.fromJson(String id, Map<String, dynamic> j) => ItemGaleria(
+        id: id,
         legenda: (j['legenda'] ?? '') as String,
         porUid: (j['porUid'] ?? '') as String,
+        miniaturaBase64: (j['miniatura'] ?? '') as String,
         em: DateTime.parse(j['em'] as String),
       );
 
   Map<String, dynamic> toJson() => {
-        'imagem': imagemBase64,
         'legenda': legenda,
         'porUid': porUid,
+        'miniatura': miniaturaBase64,
         'em': em.toIso8601String(),
       };
+}
+
+/// O que está em destaque no mural agora. Aponta para uma imagem da galeria —
+/// carregar a imagem aqui faria todo aparelho baixá-la de novo a cada mudança.
+class ItemMural {
+  final String imagemId;
+  final DateTime em;
+
+  const ItemMural({required this.imagemId, required this.em});
+
+  factory ItemMural.fromJson(Map<String, dynamic> j) => ItemMural(
+        imagemId: (j['imagemId'] ?? '') as String,
+        em: DateTime.parse(j['em'] as String),
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'imagemId': imagemId, 'em': em.toIso8601String()};
 }
 
 /// Tudo que o app precisa da mesa online.
@@ -124,9 +144,21 @@ abstract class MesaService {
   /// Uma ficha específica. Null se não existe ou se você não pode ver.
   Stream<FichaNaMesa?> observarFicha(String mesaId, String donoUid);
 
-  /// Só o mestre. Põe a imagem no mural da mesa.
-  Future<void> mostrarNoMural(
-      String mesaId, String imagemBase64, String legenda);
+  /// Só o mestre. Guarda a imagem na galeria e devolve o id dela.
+  Future<String> guardarNaGaleria(String mesaId, String imagemBase64,
+      String miniaturaBase64, String legenda);
+
+  /// Só o mestre. Tira a imagem da galeria, junto com a imagem cheia.
+  Future<void> apagarDaGaleria(String mesaId, String imagemId);
+
+  /// Mais recente primeiro. Só miniaturas.
+  Stream<List<ItemGaleria>> observarGaleria(String mesaId);
+
+  /// A imagem cheia, buscada só quando alguém abre. Null se não existe.
+  Future<String?> imagemCheia(String mesaId, String imagemId);
+
+  /// Só o mestre. Põe a imagem em destaque: abre na tela de todos.
+  Future<void> mostrarAgora(String mesaId, String imagemId);
 
   /// Só o mestre. Tira o que estiver no mural.
   Future<void> limparMural(String mesaId);

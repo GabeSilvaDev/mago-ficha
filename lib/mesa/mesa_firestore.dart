@@ -148,16 +148,72 @@ class MesaFirestore implements MesaService {
   DocumentReference<Map<String, dynamic>> _mural(String mesaId) =>
       _mesa(mesaId).collection('mural').doc('atual');
 
+  CollectionReference<Map<String, dynamic>> _galeria(String mesaId) =>
+      _mesa(mesaId).collection('galeria');
+
+  CollectionReference<Map<String, dynamic>> _imagens(String mesaId) =>
+      _mesa(mesaId).collection('imagens');
+
   @override
-  Future<void> mostrarNoMural(
-      String mesaId, String imagemBase64, String legenda) async {
+  Future<String> guardarNaGaleria(String mesaId, String imagemBase64,
+      String miniaturaBase64, String legenda) async {
+    final meuUid = uid;
+    if (meuUid == null) throw SemPermissao();
+    final ref = _galeria(mesaId).doc();
     try {
-      await _mural(mesaId).set(ItemMural(
-        imagemBase64: imagemBase64,
+      // a imagem cheia primeiro: a entrada da galeria só aparece quando há o
+      // que abrir, e não fica item pela metade se a rede cair no meio
+      await _imagens(mesaId).doc(ref.id).set({'imagem': imagemBase64});
+      await ref.set(ItemGaleria(
+        id: ref.id,
         legenda: legenda,
-        porUid: uid ?? '',
+        porUid: meuUid,
+        miniaturaBase64: miniaturaBase64,
         em: DateTime.now(),
       ).toJson());
+      return ref.id;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw SemPermissao();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> apagarDaGaleria(String mesaId, String imagemId) async {
+    try {
+      // pesado primeiro: se o segundo delete falhar, o item continua na
+      // galeria e ninguém fica com imagem grande órfã ocupando espaço
+      await _imagens(mesaId).doc(imagemId).delete();
+      await _galeria(mesaId).doc(imagemId).delete();
+      final atual = await _mural(mesaId).get();
+      if (atual.exists && atual.data()!['imagemId'] == imagemId) {
+        await _mural(mesaId).delete();
+      }
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw SemPermissao();
+      rethrow;
+    }
+  }
+
+  @override
+  Stream<List<ItemGaleria>> observarGaleria(String mesaId) => _galeria(mesaId)
+      .orderBy('em', descending: true)
+      .snapshots()
+      .map((q) =>
+          q.docs.map((d) => ItemGaleria.fromJson(d.id, d.data())).toList());
+
+  @override
+  Future<String?> imagemCheia(String mesaId, String imagemId) async {
+    final doc = await _imagens(mesaId).doc(imagemId).get();
+    if (!doc.exists) return null;
+    return doc.data()!['imagem'] as String?;
+  }
+
+  @override
+  Future<void> mostrarAgora(String mesaId, String imagemId) async {
+    try {
+      await _mural(mesaId).set(
+          ItemMural(imagemId: imagemId, em: DateTime.now()).toJson());
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') throw SemPermissao();
       rethrow;
@@ -247,6 +303,14 @@ class MesaFirestore implements MesaService {
       final fichas = await _mesa(mesaId).collection('fichas').get();
       for (final f in fichas.docs) {
         await f.reference.delete();
+      }
+      final galeria = await _galeria(mesaId).get();
+      for (final g in galeria.docs) {
+        await g.reference.delete();
+      }
+      final imagens = await _imagens(mesaId).get();
+      for (final i in imagens.docs) {
+        await i.reference.delete();
       }
       final membros = await _mesa(mesaId).collection('membros').get();
       for (final m in membros.docs) {

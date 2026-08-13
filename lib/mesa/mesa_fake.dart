@@ -10,12 +10,15 @@ class MundoFake {
   final Map<String, Mesa> mesas = {};
   final Map<String, Map<String, Membro>> membros = {};
   final Map<String, Map<String, FichaNaMesa>> fichas = {};
+  final Map<String, Map<String, ItemGaleria>> galeria = {};
+  final Map<String, Map<String, String>> cheias = {};
   final Map<String, ItemMural> mural = {};
 
   final Map<String, StreamController<Mesa?>> _mesaCtrl = {};
   final Map<String, StreamController<List<Membro>>> _membrosCtrl = {};
   final Map<String, StreamController<int>> _fichasCtrl = {};
   final Map<String, StreamController<ItemMural?>> _muralCtrl = {};
+  final Map<String, StreamController<int>> _galeriaCtrl = {};
   int _seq = 0;
   int _versao = 0;
 
@@ -26,6 +29,7 @@ class MundoFake {
     _membrosCtrl[mesaId]?.add(membros[mesaId]?.values.toList() ?? const []);
     _fichasCtrl[mesaId]?.add(++_versao);
     _muralCtrl[mesaId]?.add(mural[mesaId]);
+    _galeriaCtrl[mesaId]?.add(++_versao);
   }
 
   Stream<Mesa?> streamMesa(String id) {
@@ -55,6 +59,15 @@ class MundoFake {
     final c = _muralCtrl.putIfAbsent(
         id, () => StreamController<ItemMural?>.broadcast());
     scheduleMicrotask(() => c.add(mural[id]));
+    return c.stream;
+  }
+
+  /// Mesmo truque de `streamFichas`: um número de gatilho, quem escuta relê
+  /// `galeria` na hora.
+  Stream<int> streamGaleria(String id) {
+    final c = _galeriaCtrl.putIfAbsent(
+        id, () => StreamController<int>.broadcast());
+    scheduleMicrotask(() => c.add(++_versao));
     return c.stream;
   }
 }
@@ -210,6 +223,8 @@ class MesaFake implements MesaService {
     mundo.membros.remove(mesaId);
     mundo.fichas.remove(mesaId);
     mundo.mural.remove(mesaId);
+    mundo.galeria.remove(mesaId);
+    mundo.cheias.remove(mesaId);
     mundo.notificar(mesaId);
   }
 
@@ -267,16 +282,55 @@ class MesaFake implements MesaService {
       });
 
   @override
-  Future<void> mostrarNoMural(
-      String mesaId, String imagemBase64, String legenda) async {
+  Future<String> guardarNaGaleria(String mesaId, String imagemBase64,
+      String miniaturaBase64, String legenda) async {
     _exigeLogin();
     _exigeMestre(mesaId);
-    mundo.mural[mesaId] = ItemMural(
-      imagemBase64: imagemBase64,
+    final id = 'img-${mundo.galeria[mesaId]?.length ?? 0}-${relogio()
+        .microsecondsSinceEpoch}';
+    (mundo.cheias[mesaId] ??= {})[id] = imagemBase64;
+    (mundo.galeria[mesaId] ??= {})[id] = ItemGaleria(
+      id: id,
       legenda: legenda,
       porUid: _uid!,
+      miniaturaBase64: miniaturaBase64,
       em: relogio(),
     );
+    mundo.notificar(mesaId);
+    return id;
+  }
+
+  @override
+  Future<void> apagarDaGaleria(String mesaId, String imagemId) async {
+    _exigeLogin();
+    _exigeMestre(mesaId);
+    mundo.cheias[mesaId]?.remove(imagemId);
+    mundo.galeria[mesaId]?.remove(imagemId);
+    // a imagem em destaque acabou de sumir: o mural não pode apontar para ela
+    if (mundo.mural[mesaId]?.imagemId == imagemId) {
+      mundo.mural.remove(mesaId);
+    }
+    mundo.notificar(mesaId);
+  }
+
+  @override
+  Stream<List<ItemGaleria>> observarGaleria(String mesaId) =>
+      mundo.streamGaleria(mesaId).map((_) {
+        final itens = mundo.galeria[mesaId]?.values.toList() ??
+            const <ItemGaleria>[];
+        final ordenados = [...itens]..sort((a, b) => b.em.compareTo(a.em));
+        return ordenados;
+      });
+
+  @override
+  Future<String?> imagemCheia(String mesaId, String imagemId) async =>
+      mundo.cheias[mesaId]?[imagemId];
+
+  @override
+  Future<void> mostrarAgora(String mesaId, String imagemId) async {
+    _exigeLogin();
+    _exigeMestre(mesaId);
+    mundo.mural[mesaId] = ItemMural(imagemId: imagemId, em: relogio());
     mundo.notificar(mesaId);
   }
 
