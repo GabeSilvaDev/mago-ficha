@@ -203,6 +203,71 @@ void main() {
     expect(FichaStore.porId(existente.id)!.ehNpc, isTrue);
   });
 
+  test('cenário da mesa: jogadores, NPCs, retratos e cadernos voltam inteiros',
+      () async {
+    // 3 jogadores, 2 NPCs, um com retrato
+    for (final n in ['Cotoia', 'Kaelrion', 'Askellad']) {
+      await FichaStore.salvar(_ficha(n));
+    }
+    final barqueiro = Ficha.criarNpc();
+    barqueiro.data['nome'] = 'Barqueiro do Nodo';
+    barqueiro.retratoId = await ImagemStore.salvar(_png());
+    await FichaStore.salvar(barqueiro);
+
+    final hades = Ficha.criarNpc();
+    hades.data['nome'] = 'Hades';
+    await FichaStore.salvar(hades);
+
+    // campos do narrador e um caderno com imagem
+    await NarradorStore.salvarCampos([
+      const CampoNarrador(
+          id: 's', nome: 'Situação', tipo: TipoCampo.tag, opcoes: ['Vivo']),
+    ]);
+    final imgCaderno = await ImagemStore.salvar(_png());
+    await NotaStore.salvar(Nota.criar()
+      ..titulo = 'Sessão 4 - o Nodo'
+      ..texto = 'Acharam o Nodo sob a estação.'
+      ..imagens.add(imgCaderno)
+      ..tags.add('sessão')
+      ..fixada = true);
+
+    final bytes = BackupIO.montarZip(FichaStore.todas());
+
+    // apaga tudo, como se fosse outro aparelho
+    await Hive.box<String>(FichaStore.boxName).clear();
+    await Hive.box<String>(ImagemStore.boxName).clear();
+    await Hive.box<String>(NarradorStore.boxName).clear();
+    await Hive.box<String>(NotaStore.boxName).clear();
+
+    final resumo = BackupIO.lerZip(bytes);
+    expect(resumo.total, 5);
+    await BackupIO.aplicar(resumo, PoliticaColisao.duplicar);
+
+    final todas = FichaStore.todas();
+    expect(todas.length, 5);
+
+    // jogadores continuam jogadores, NPCs continuam NPCs
+    expect(todas.where((f) => f.ehNpc).map((f) => f.nome).toList()..sort(),
+        ['Barqueiro do Nodo', 'Hades']);
+    expect(todas.where((f) => !f.ehNpc).length, 3);
+
+    // o retrato do NPC voltou de verdade
+    final npc = todas.firstWhere((f) => f.nome == 'Barqueiro do Nodo');
+    expect(npc.retratoId, isNotNull);
+    expect(ImagemStore.bytes(npc.retratoId!), isNotNull);
+
+    // caderno inteiro, com imagem, tag e alfinete
+    final notas = NotaStore.todas();
+    expect(notas.length, 1);
+    expect(notas.single.titulo, 'Sessão 4 - o Nodo');
+    expect(notas.single.tags, ['sessão']);
+    expect(notas.single.fixada, isTrue);
+    expect(ImagemStore.bytes(notas.single.imagens.single), isNotNull);
+
+    // campos do narrador
+    expect(NarradorStore.campos().single.nome, 'Situação');
+  });
+
   test('zip antigo, sem pasta do narrador, continua importável', () {
     final resumo = BackupIO.lerZip(BackupIO.montarZip([_ficha('Sozinha')]));
     expect(resumo.total, 1);

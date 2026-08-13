@@ -6,7 +6,7 @@
     "background_color": "#241E45",
     "theme_color": "#241E45",
     "description": "Ficha de personagem offline de Mago: A Ascensão (20th).",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

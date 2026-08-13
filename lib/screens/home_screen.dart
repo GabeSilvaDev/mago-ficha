@@ -7,6 +7,7 @@ import '../services/backup_io.dart';
 import '../services/ficha_io.dart';
 import '../store/ficha_store.dart';
 import '../theme.dart';
+import '../widgets/layout.dart';
 import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 import 'ficha_view_screen.dart';
@@ -196,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final larga = telaLarga(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(_aba == 0 ? 'MAGO: A ASCENSÃO' : 'NARRADOR'),
@@ -232,26 +234,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _aba,
-        children: [_abaMagos(context), const NarradorScreen()],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _aba,
-        onDestinationSelected: (i) => setState(() => _aba = i),
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined),
-              selectedIcon: Icon(Icons.auto_awesome),
-              label: 'Magos'),
-          NavigationDestination(
-              icon: Icon(Icons.menu_book_outlined),
-              selectedIcon: Icon(Icons.menu_book),
-              label: 'Narrador'),
-        ],
-      ),
+      // No PC a navegação vai para a lateral: barra inferior em tela larga
+      // deixa um vão enorme no meio e obriga a mira do mouse a atravessar a
+      // tela inteira.
+      body: larga
+          ? Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _aba,
+                  onDestinationSelected: (i) => setState(() => _aba = i),
+                  labelType: NavigationRailLabelType.all,
+                  backgroundColor: Cores.pergaminhoEscuro,
+                  destinations: const [
+                    NavigationRailDestination(
+                        icon: Icon(Icons.auto_awesome_outlined),
+                        selectedIcon: Icon(Icons.auto_awesome),
+                        label: Text('Magos')),
+                    NavigationRailDestination(
+                        icon: Icon(Icons.menu_book_outlined),
+                        selectedIcon: Icon(Icons.menu_book),
+                        label: Text('Narrador')),
+                  ],
+                ),
+                const VerticalDivider(width: 1, color: Cores.dourado),
+                Expanded(child: Miolo(child: _corpo(context))),
+              ],
+            )
+          : _corpo(context),
+      bottomNavigationBar: larga
+          ? null
+          : NavigationBar(
+              selectedIndex: _aba,
+              onDestinationSelected: (i) => setState(() => _aba = i),
+              destinations: const [
+                NavigationDestination(
+                    icon: Icon(Icons.auto_awesome_outlined),
+                    selectedIcon: Icon(Icons.auto_awesome),
+                    label: 'Magos'),
+                NavigationDestination(
+                    icon: Icon(Icons.menu_book_outlined),
+                    selectedIcon: Icon(Icons.menu_book),
+                    label: 'Narrador'),
+              ],
+            ),
     );
   }
+
+  Widget _corpo(BuildContext context) => IndexedStack(
+        index: _aba,
+        children: [_abaMagos(context), const NarradorScreen()],
+      );
 
   /// Lista dos magos dos jogadores. NPCs ficam só na galeria do narrador.
   Widget _abaMagos(BuildContext context) {

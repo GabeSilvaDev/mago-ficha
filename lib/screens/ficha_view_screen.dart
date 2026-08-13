@@ -7,6 +7,7 @@ import '../services/ficha_pdf.dart';
 import '../store/ficha_store.dart';
 import '../store/narrador_store.dart';
 import '../theme.dart';
+import '../widgets/layout.dart';
 import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 
@@ -83,6 +84,35 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
     }
   }
 
+  /// Exclui a ficha aberta. Fica aqui, e não só na lista da aba Magos, porque
+  /// NPC não aparece naquela lista: sem isto, não há como apagar um NPC.
+  Future<void> _confirmarExcluir() async {
+    final ficha = f;
+    if (ficha == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Cores.pergaminho,
+        title: Text(ficha.ehNpc ? 'Excluir NPC?' : 'Excluir ficha?'),
+        content: Text(
+            'Tem certeza que deseja excluir "${ficha.nome.isEmpty ? 'Sem nome' : ficha.nome}"? '
+            'Isso não pode ser desfeito.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Excluir',
+                  style: TextStyle(color: Cores.indigo))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await FichaStore.excluir(ficha.id);
+    if (mounted) Navigator.of(context).pop();
+  }
+
   /// Salva o estado de jogo imediatamente (trackers).
   Future<void> _salvarQuieto() async {
     final ficha = f;
@@ -97,9 +127,12 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
     if (ficha == null) {
       return const Scaffold(body: Center(child: Text('Ficha não encontrada.')));
     }
-    ListView aba(List<Widget> filhos) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [...filhos, const SizedBox(height: 24)],
+    // Miolo: numa tela de PC a ficha esticada de ponta a ponta fica ilegível.
+    Widget aba(List<Widget> filhos) => Miolo(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [...filhos, const SizedBox(height: 24)],
+          ),
         );
     return DefaultTabController(
       length: 6,
@@ -123,6 +156,26 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
               onPressed: _editar,
               icon: const Icon(Icons.edit_note),
               tooltip: 'Editar ficha inteira (todas as etapas)',
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'Mais ações',
+              color: Cores.pergaminho,
+              onSelected: (v) {
+                if (v == 'excluir') _confirmarExcluir();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'excluir',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: Cores.indigo),
+                      SizedBox(width: 8),
+                      Text('Excluir ficha'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
           bottom: const TabBar(

@@ -5,10 +5,17 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <!-- Sem isto o Safari do iPhone desenha a página como se tivesse 980px de
+       largura e encolhe tudo. `viewport-fit=cover` entrega a área do notch
+       para o app, que já usa SafeArea. -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Ficha de personagem de Mago: A Ascensão (20th).">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
+  <!-- o iOS ainda lê a variante com prefixo apple- para abrir em tela cheia -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Mago: A Ascensão">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
