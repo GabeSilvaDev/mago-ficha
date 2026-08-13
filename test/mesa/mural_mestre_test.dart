@@ -68,7 +68,8 @@ void main() {
   });
 
   testWidgets('com imagem no mural, o mestre pode tirar', (t) async {
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa da estação');
+    await mestre.mostrarAgora(mesaId,
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa da estação'));
     await abrir(t, mestre, souMestre: true);
 
     expect(find.text('mapa da estação'), findsOneWidget);
@@ -76,7 +77,8 @@ void main() {
   });
 
   testWidgets('tirar do mural volta a oferecer mostrar', (t) async {
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa');
+    await mestre.mostrarAgora(mesaId,
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa'));
     await abrir(t, mestre, souMestre: true);
 
     await t.tap(find.text('Tirar do mural'));
@@ -90,7 +92,8 @@ void main() {
   /// O ponto do pedido: quem fechou a imagem precisa voltar a ela sem depender
   /// de o mestre mostrar de novo.
   testWidgets('jogador reabre a imagem quantas vezes quiser', (t) async {
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa da estação');
+    await mestre.mostrarAgora(mesaId,
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa da estação'));
     final kaue = await jogadorNaMesa();
     await abrir(t, kaue, souMestre: false);
 
@@ -111,7 +114,8 @@ void main() {
   });
 
   testWidgets('jogador não põe nem tira imagem', (t) async {
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa');
+    await mestre.mostrarAgora(mesaId,
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa'));
     final kaue = await jogadorNaMesa();
     await abrir(t, kaue, souMestre: false);
 
@@ -128,7 +132,8 @@ void main() {
   });
 
   testWidgets('mestre tira e a imagem some da tela do jogador', (t) async {
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa');
+    await mestre.mostrarAgora(mesaId,
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa'));
     final kaue = await jogadorNaMesa();
     await abrir(t, kaue, souMestre: false);
     expect(find.text('Ver em tela cheia'), findsOneWidget);

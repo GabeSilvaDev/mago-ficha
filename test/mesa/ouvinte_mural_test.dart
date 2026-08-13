@@ -41,7 +41,12 @@ void main() {
     final (mestre, mesaId) = await mesaAberta(t);
     expect(find.byType(VisualizadorImagens), findsNothing);
 
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa');
+    final id =
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa');
+    await mestre.mostrarAgora(mesaId, id);
+    // um pump a mais que antes: agora o ouvinte busca a imagem cheia
+    // (`imagemCheia`) antes de abrir, e essa busca é mais um salto assíncrono
+    await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
 
@@ -63,7 +68,10 @@ void main() {
   testWidgets('a mesma imagem não reabre a cada emissão', (t) async {
     final (mestre, mesaId) = await mesaAberta(t);
 
-    await mestre.mostrarNoMural(mesaId, _imagemBase64(), 'mapa');
+    final id =
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa');
+    await mestre.mostrarAgora(mesaId, id);
+    await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
 

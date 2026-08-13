@@ -63,20 +63,22 @@ class _OuvinteMuralState extends State<OuvinteMural> {
   }
 
   void _aoMudar(ItemMural? item) {
-    if (item == null || item.imagemBase64.isEmpty) return;
+    if (item == null || item.imagemId.isEmpty) return;
     if (_ultimoAberto != null && !item.em.isAfter(_ultimoAberto!)) return;
     _ultimoAberto = item.em;
     _abrir(item);
   }
 
-  void _abrir(ItemMural item) {
-    if (!mounted) return;
-    final bytes = base64Decode(item.imagemBase64);
+  Future<void> _abrir(ItemMural item) async {
+    final imagem =
+        await widget.servico.imagemCheia(widget.mesaId, item.imagemId);
+    if (imagem == null || !mounted) return;
+    final bytes = base64Decode(imagem);
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => VisualizadorImagens(
         imagens: const ['mural'],
         bytesDiretos: {'mural': bytes},
-        legendas: {'mural': item.legenda},
+        legendas: const {'mural': ''},
       ),
     ));
   }

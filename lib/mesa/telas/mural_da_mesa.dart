@@ -55,8 +55,9 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
     try {
       final bytes = ImagemStore.bytes(id);
       if (bytes == null) throw Exception('Não consegui ler a imagem.');
-      await servico.mostrarNoMural(
-          mesaId, ImagemMural.preparar(bytes), legenda ?? '');
+      final imagemId = await servico.guardarNaGaleria(mesaId,
+          ImagemMural.preparar(bytes), ImagemMural.miniatura(bytes), legenda ?? '');
+      await servico.mostrarAgora(mesaId, imagemId);
       // a cópia local só existia para chegar até aqui: o mural carrega a sua
       await ImagemStore.excluir(id);
     } catch (e) {
@@ -100,12 +101,12 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
     }
   }
 
-  void _abrirTelaCheia(ItemMural item) {
+  void _abrirTelaCheia(String imagemBase64, String legenda) {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => VisualizadorImagens(
         imagens: const ['mural'],
-        bytesDiretos: {'mural': base64Decode(item.imagemBase64)},
-        legendas: {'mural': item.legenda},
+        bytesDiretos: {'mural': base64Decode(imagemBase64)},
+        legendas: {'mural': legenda},
       ),
     ));
   }
@@ -127,6 +128,25 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
         return item == null ? _vazio() : _comImagem(item);
       },
     );
+  }
+
+  /// O que está em destaque no mural só guarda o id: legenda e imagem cheia
+  /// moram na galeria. Guarda o Future por imagemId para não refazer a busca
+  /// a cada rebuild — só quando o destaque muda de fato.
+  String? _imagemIdCarregado;
+  Future<(String?, String)>? _futuroImagem;
+
+  Future<(String?, String)> _carregarImagem(String imagemId) async {
+    final cheia = await servico.imagemCheia(mesaId, imagemId);
+    final galeria = await servico.observarGaleria(mesaId).first;
+    var legenda = '';
+    for (final g in galeria) {
+      if (g.id == imagemId) {
+        legenda = g.legenda;
+        break;
+      }
+    }
+    return (cheia, legenda);
   }
 
   Widget _vazio() {
@@ -169,51 +189,79 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
   }
 
   Widget _comImagem(ItemMural item) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            InkWell(
-              onTap: () => _abrirTelaCheia(item),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.memory(
-                  base64Decode(item.imagemBase64),
-                  height: 120,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox(
-                    height: 120,
-                    child: Icon(Icons.broken_image_outlined, size: 40),
-                  ),
-                ),
-              ),
+    if (_imagemIdCarregado != item.imagemId) {
+      _imagemIdCarregado = item.imagemId;
+      _futuroImagem = _carregarImagem(item.imagemId);
+    }
+    return FutureBuilder<(String?, String)>(
+      future: _futuroImagem,
+      builder: (context, snap) {
+        final dados = snap.data;
+        if (dados == null) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
             ),
-            if (item.legenda.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(item.legenda,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-            Wrap(
-              alignment: WrapAlignment.center,
+          );
+        }
+        final (imagemBase64, legenda) = dados;
+        if (imagemBase64 == null) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(14),
+              child: Text('Imagem não encontrada.'),
+            ),
+          );
+        }
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
               children: [
-                TextButton.icon(
-                  onPressed: () => _abrirTelaCheia(item),
-                  icon: const Icon(Icons.open_in_full, size: 18),
-                  label: const Text('Ver em tela cheia'),
-                ),
-                if (widget.souMestre)
-                  TextButton.icon(
-                    onPressed: _tirar,
-                    icon: const Icon(Icons.visibility_off_outlined, size: 18),
-                    label: const Text('Tirar do mural'),
+                InkWell(
+                  onTap: () => _abrirTelaCheia(imagemBase64, legenda),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.memory(
+                      base64Decode(imagemBase64),
+                      height: 120,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox(
+                        height: 120,
+                        child: Icon(Icons.broken_image_outlined, size: 40),
+                      ),
+                    ),
                   ),
+                ),
+                if (legenda.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(legenda,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _abrirTelaCheia(imagemBase64, legenda),
+                      icon: const Icon(Icons.open_in_full, size: 18),
+                      label: const Text('Ver em tela cheia'),
+                    ),
+                    if (widget.souMestre)
+                      TextButton.icon(
+                        onPressed: _tirar,
+                        icon:
+                            const Icon(Icons.visibility_off_outlined, size: 18),
+                        label: const Text('Tirar do mural'),
+                      ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
