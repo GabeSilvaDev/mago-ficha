@@ -7,8 +7,11 @@ Flutter. Em vez de fingir cobertura automatizada, esta lista é executada à mã
 **Como rodar:** instale o canal `beta` em dois aparelhos (ou um aparelho e o
 PWA numa aba anônima):
 
+O `--dart-define=CANAL=beta` faz o app se identificar como o registro beta no
+console do Firebase (ver `lib/firebase_options.dart`).
+
 ```bash
-docker exec mago-ascensao-flutter sh -c "cd /app && flutter build apk --release --flavor beta"
+docker exec mago-ascensao-flutter sh -c "cd /app && flutter build apk --release --flavor beta --dart-define=CANAL=beta"
 docker run --rm --privileged -v /dev/bus/usb:/dev/bus/usb \
   -v /home/gabriel/Documentos/rpg/fichas/MagoAAssencao:/app \
   ghcr.io/cirruslabs/flutter:stable \
