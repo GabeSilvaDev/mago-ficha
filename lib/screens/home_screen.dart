@@ -11,6 +11,9 @@ import '../widgets/layout.dart';
 import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 import 'ficha_view_screen.dart';
+import '../mesa/mesa_firestore.dart';
+import '../mesa/mesa_store.dart';
+import '../mesa/ouvinte_mural.dart';
 import '../mesa/telas/mesa_aba.dart';
 import 'narrador/narrador_screen.dart';
 
@@ -198,6 +201,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Dentro de uma mesa, a imagem que o mestre põe no mural abre por cima de
+    // qualquer aba. Fora de mesa nada é assinado.
+    return ValueListenableBuilder(
+      valueListenable: MesaStore.listenable,
+      builder: (context, _, _) {
+        final estado = MesaStore.atual;
+        final tela = _tela(context);
+        if (estado == null) return tela;
+        return OuvinteMural(
+          servico: MesaFirestore(),
+          mesaId: estado.mesaId,
+          child: tela,
+        );
+      },
+    );
+  }
+
+  Widget _tela(BuildContext context) {
     final larga = telaLarga(context);
     return Scaffold(
       appBar: AppBar(
