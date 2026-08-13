@@ -40,7 +40,11 @@ service cloud.firestore {
       allow update, delete: if souMestre(mesaId);
 
       match /membros/{membroUid} {
-        allow read: if souMembro(mesaId);
+        // O próprio registro se lê sempre: quem está entrando ainda não é
+        // membro, e `souMembro` procura justamente o doc que ele vai criar.
+        // Sem esta metade a mesa fica trancada por fora — só entra quem já
+        // entrou.
+        allow read: if souMembro(mesaId) || (logado() && membroUid == uid());
         // entrar e bater ponto: só o próprio
         allow create, update: if logado() && membroUid == uid();
         // sair (o próprio) ou ser removido (o mestre)

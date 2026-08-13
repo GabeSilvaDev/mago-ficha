@@ -83,21 +83,31 @@ class MesaFirestore implements MesaService {
     final mesaId = atalho.data()!['mesaId'] as String;
 
     final membros = _mesa(mesaId).collection('membros').doc(meuUid);
-    final jaEra = await membros.get();
     final agora = DateTime.now();
 
-    await membros.set({
-      'nome': meuNome,
-      // entrar de novo não rebaixa o mestre nem promove ninguém
-      'papel': (jaEra.data()?['papel'] as String?) ?? 'jogador',
-      'entrouEm':
-          (jaEra.data()?['entrouEm'] as String?) ?? agora.toIso8601String(),
-      'visto': agora.toIso8601String(),
-    });
+    try {
+      final jaEra = await membros.get();
 
-    final doc = await _mesa(mesaId).get();
-    if (!doc.exists) throw MesaNaoEncontrada();
-    return Mesa.fromJson(mesaId, doc.data()!);
+      await membros.set({
+        'nome': meuNome,
+        // entrar de novo não rebaixa o mestre nem promove ninguém
+        'papel': (jaEra.data()?['papel'] as String?) ?? 'jogador',
+        'entrouEm':
+            (jaEra.data()?['entrouEm'] as String?) ?? agora.toIso8601String(),
+        'visto': agora.toIso8601String(),
+      });
+
+      // A mesa só é legível depois que o registro de membro existe — é assim
+      // que a regra sabe que somos da casa.
+      final doc = await _mesa(mesaId).get();
+      if (!doc.exists) throw MesaNaoEncontrada();
+      return Mesa.fromJson(mesaId, doc.data()!);
+    } on FirebaseException catch (e) {
+      // O código apontava para uma mesa que não existe mais: sem a mesa, a
+      // regra não tem como reconhecer ninguém.
+      if (e.code == 'permission-denied') throw MesaNaoEncontrada();
+      rethrow;
+    }
   }
 
   @override
