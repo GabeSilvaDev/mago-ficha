@@ -10,7 +10,19 @@ PWA numa aba anônima):
 O `--dart-define=CANAL=beta` faz o app se identificar como o registro beta no
 console do Firebase (ver `lib/firebase_options.dart`).
 
+**Antes de gerar um APK que vai para o celular, rode `flutter clean`.** O
+Gradle já entregou um `app-beta-release.apk` novo por fora com o `libapp.so`
+de um build anterior — o app abria sem a aba Mesa e nada no log acusava. O
+sintoma é o build do Gradle terminar rápido demais (~50s em vez de ~100s).
+Para conferir sem instalar:
+
 ```bash
+unzip -p build/app/outputs/flutter-apk/app-beta-release.apk lib/arm64-v8a/libapp.so \
+  | strings -a | grep -c 'Criar mesa'   # 0 = APK velho
+```
+
+```bash
+docker exec mago-ascensao-flutter sh -c "cd /app && flutter clean && flutter pub get"
 docker exec mago-ascensao-flutter sh -c "cd /app && flutter build apk --release --flavor beta --dart-define=CANAL=beta"
 docker run --rm --privileged -v /dev/bus/usb:/dev/bus/usb \
   -v /home/gabriel/Documentos/rpg/fichas/MagoAAssencao:/app \
