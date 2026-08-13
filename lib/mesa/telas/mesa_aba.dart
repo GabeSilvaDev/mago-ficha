@@ -14,6 +14,7 @@ import '../mesa_service.dart';
 import '../mesa_store.dart';
 import '../modelos.dart';
 import 'entrar_mesa_dialogo.dart';
+import 'painel_mestre.dart';
 
 /// A aba Mesa: criar, entrar, ver quem está online e sair.
 ///
@@ -353,6 +354,10 @@ class _MesaAbaState extends State<MesaAba> {
             ),
             const FaixaSecao('Quem está na mesa'),
             _membros(estado, souMestre),
+            if (souMestre) ...[
+              const FaixaSecao('Fichas da sessão'),
+              PainelMestre(servico: _servico, mesaId: estado.mesaId),
+            ],
             const FaixaSecao('Minha ficha nesta mesa'),
             _minhaFicha(estado),
             const SizedBox(height: 16),

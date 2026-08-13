@@ -85,6 +85,11 @@ void main() {
     expect(find.textContaining('MAGO-'), findsOneWidget);
     expect(find.text('mestre'), findsOneWidget);
     expect(find.byTooltip('Trocar código'), findsOneWidget);
+
+    // a tela do mestre tem painel de fichas e cartão da ficha própria: os
+    // botões do rodapé ficam fora da viewport do teste
+    await t.drag(find.byType(ListView), const Offset(0, -400));
+    await assentar(t);
     expect(find.text('Fechar mesa'), findsOneWidget);
   });
 }
