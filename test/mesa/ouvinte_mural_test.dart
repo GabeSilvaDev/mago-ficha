@@ -44,13 +44,30 @@ void main() {
     final id =
         await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa');
     await mestre.mostrarAgora(mesaId, id);
-    // um pump a mais que antes: agora o ouvinte busca a imagem cheia
-    // (`imagemCheia`) antes de abrir, e essa busca é mais um salto assíncrono
+    // dois pumps a mais que antes: o ouvinte busca a imagem cheia
+    // (`imagemCheia`) e, depois, a legenda na galeria (`observarGaleria`)
+    // antes de abrir — cada `await` novo em `_abrir` é mais um salto
+    // assíncrono, e `pump()` sem duração só avança um salto por vez
+    await t.pump();
     await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
 
     expect(find.byType(VisualizadorImagens), findsOneWidget);
+  });
+
+  testWidgets('legenda da galeria aparece na tela cheia', (t) async {
+    final (mestre, mesaId) = await mesaAberta(t);
+
+    final id = await mestre.guardarNaGaleria(
+        mesaId, _imagemBase64(), 'mini', 'o mapa que vocês acham na mesa');
+    await mestre.mostrarAgora(mesaId, id);
+    await t.pump();
+    await t.pump();
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    expect(find.text('o mapa que vocês acham na mesa'), findsOneWidget);
   });
 
   testWidgets('mural limpo não reabre nada', (t) async {
@@ -73,6 +90,7 @@ void main() {
     await mestre.mostrarAgora(mesaId, id);
     await t.pump();
     await t.pump();
+    await t.pump();
     await t.pump(const Duration(seconds: 1));
 
     // fecha e provoca novas emissões sem imagem nova
@@ -80,6 +98,26 @@ void main() {
     await t.pump();
     await t.pump(const Duration(seconds: 1));
     await mestre.baterPonto(mesaId);
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    expect(find.byType(VisualizadorImagens), findsNothing);
+  });
+
+  testWidgets('ponteiro para imagem que sumiu não abre nada', (t) async {
+    final (mestre, mesaId) = await mesaAberta(t);
+    final id =
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa');
+    // apaga ANTES de apontar o mural pra ela: se fosse depois, `apagarDaGaleria`
+    // já limpa sozinho o mural que aponta pro id apagado (dado da mesa
+    // consistente), e o teste nunca chegaria a exercitar a defesa do ouvinte.
+    // Isso simula o ponteiro chegando órfão — mural com um `imagemId` cuja
+    // imagem cheia já não existe mais.
+    await mestre.apagarDaGaleria(mesaId, id);
+    await mestre.mostrarAgora(mesaId, id);
+
+    await t.pump();
+    await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
 

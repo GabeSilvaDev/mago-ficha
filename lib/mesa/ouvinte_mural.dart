@@ -73,12 +73,29 @@ class _OuvinteMuralState extends State<OuvinteMural> {
     final imagem =
         await widget.servico.imagemCheia(widget.mesaId, item.imagemId);
     if (imagem == null || !mounted) return;
+
+    // a legenda vive na galeria, não no ItemMural: desde a task 3 o mural
+    // virou só um ponteiro (imagemId + horário) para nenhum aparelho ter que
+    // baixar a imagem cheia de novo a cada mudança de destaque, e a legenda
+    // de verdade ficou junto da miniatura. Por isso ela só existe numa
+    // leitura da galeria — e só vale a pena fazer essa leitura agora, que a
+    // imagem já provou que existe e vai mesmo abrir.
+    final galeria = await widget.servico.observarGaleria(widget.mesaId).first;
+    var legenda = '';
+    for (final it in galeria) {
+      if (it.id == item.imagemId) {
+        legenda = it.legenda;
+        break;
+      }
+    }
+    if (!mounted) return;
+
     final bytes = base64Decode(imagem);
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => VisualizadorImagens(
         imagens: const ['mural'],
         bytesDiretos: {'mural': bytes},
-        legendas: const {'mural': ''},
+        legendas: {'mural': legenda},
       ),
     ));
   }
