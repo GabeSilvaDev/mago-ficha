@@ -73,6 +73,17 @@ quem não usa mesa.
 | 21 | B tenta `set` em `mesas/{id}/mural/atual` (simulador de regras) | **negado** | |
 | 22 | A fecha a mesa com imagem no mural | o mural some junto, sem documento órfão | |
 
+## Fase 4 — mesa permanente e galeria
+
+| # | O quê | Esperado | OK? |
+|---|---|---|---|
+| 23 | B tenta `create` em `mesas/{id}/galeria/{x}` (simulador) | **negado** | |
+| 24 | B tenta `get` em `mesas/{id}/privado/chave` (simulador) | **negado** | |
+| 25 | B tenta `update` em `mesas/{id}` trocando `mestreUid` sem pedido válido | **negado** | |
+| 26 | A põe imagem, encerra a sessão, fecha o app; no dia seguinte volta pela lista de mesas | a imagem continua na galeria | |
+| 27 | A limpa os dados do app e usa código + chave em "já sou o mestre desta mesa" | volta a ser mestre, galeria intacta | |
+| 28 | A apaga a mesa digitando o nome | some para todos; a mesa sai da lista de mesas conhecidas | |
+
 ## Simulador de regras
 
 Console do Firebase → **Firestore Database** → aba **Regras** → **Simulador**.

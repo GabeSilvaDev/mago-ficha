@@ -18,6 +18,20 @@ service cloud.firestore {
         exists(/databases/$(db)/documents/mesas/$(id)/membros/$(uid()));
     }
 
+    // Só quem provou a chave certa (pedido == chave guardada, ambos lidos
+    // via get() porque ninguém tem `read` em `privado/*`) pode virar mestre
+    // trocando `mestreUid` — e só esse campo, nada mais muda por aqui.
+    function reassumindo(id) {
+      let pedido = get(/databases/$(db)/documents/mesas/$(id)/privado/pedido).data;
+      let guardada = get(/databases/$(db)/documents/mesas/$(id)/privado/chave).data;
+      return logado() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['mestreUid']) &&
+        request.resource.data.mestreUid == uid() &&
+        pedido.uid == uid() &&
+        pedido.chave == guardada.chave;
+    }
+
     // Resolver código -> mesa. Qualquer logado lê, porque quem vai entrar
     // ainda não é membro. É por isso que esta coleção existe separada: se a
     // busca fosse uma query em `mesas`, daria para varrer todas as mesas.
@@ -35,9 +49,41 @@ service cloud.firestore {
     }
 
     match /mesas/{mesaId} {
-      allow read:   if souMembro(mesaId);
+      // Depois de `encerrarSessao` ninguém é membro — nem o mestre, cujo
+      // registro de membro também é apagado. Sem a segunda metade o próprio
+      // mestre levaria permission-denied ao reabrir a mesa, inclusive no
+      // get() que `apagarMesa` faz antes de apagar.
+      allow read:   if souMembro(mesaId) || souMestre(mesaId);
       allow create: if logado() && request.resource.data.mestreUid == uid();
-      allow update, delete: if souMestre(mesaId);
+      // O mestre manda na mesa. A outra metade é a recuperação: quem prova a
+      // chave vira mestre, e SÓ isso — nenhum outro campo pode mudar por aqui.
+      allow update: if souMestre(mesaId) || reassumindo(mesaId);
+      allow delete: if souMestre(mesaId);
+
+      // A galeria da crônica: todo membro vê, só o mestre mexe.
+      match /galeria/{imagemId} {
+        allow read:  if souMembro(mesaId);
+        allow write: if souMestre(mesaId);
+      }
+
+      // A imagem cheia, buscada só quando alguém abre.
+      match /imagens/{imagemId} {
+        allow read:  if souMembro(mesaId);
+        allow write: if souMestre(mesaId);
+      }
+
+      // Ninguém lê estes dois: só as regras, com get(). É o que permite
+      // guardar a chave sem entregá-la a quem entra na mesa.
+      match /privado/chave {
+        allow read: if false;
+        allow create: if souMestre(mesaId);
+        allow update, delete: if false;
+      }
+      match /privado/pedido {
+        allow read: if false;
+        allow create, update: if logado();
+        allow delete: if souMestre(mesaId);
+      }
 
       match /membros/{membroUid} {
         // O próprio registro se lê sempre: quem está entrando ainda não é
