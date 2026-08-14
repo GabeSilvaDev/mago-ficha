@@ -37,21 +37,28 @@ class _GaleriaMesaState extends State<GaleriaMesa> {
 
   Future<void> _abrir(ItemGaleria item) async {
     setState(() => _carregando = item.id);
-    final cheia = await widget.servico.imagemCheia(widget.mesaId, item.id);
-    if (!mounted) return;
-    setState(() => _carregando = null);
-    if (cheia == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não consegui carregar a imagem.')));
-      return;
+    try {
+      final cheia = await widget.servico.imagemCheia(widget.mesaId, item.id);
+      if (!mounted) return;
+      if (cheia == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Não consegui carregar a imagem.')));
+        return;
+      }
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => VisualizadorImagens(
+          imagens: const ['mural'],
+          bytesDiretos: {'mural': base64Decode(cheia)},
+          legendas: {'mural': item.legenda},
+        ),
+      ));
+    } catch (e) {
+      // sem isto, uma falha de rede aqui deixava o véu e o spinner presos na
+      // célula até sair da aba — o erro subia sem tratamento
+      _erro(e);
+    } finally {
+      if (mounted) setState(() => _carregando = null);
     }
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => VisualizadorImagens(
-        imagens: const ['mural'],
-        bytesDiretos: {'mural': base64Decode(cheia)},
-        legendas: {'mural': item.legenda},
-      ),
-    ));
   }
 
   Future<void> _mostrarAgora(ItemGaleria item) async {
