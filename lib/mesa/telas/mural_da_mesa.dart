@@ -14,6 +14,9 @@ import '../mesa_service.dart';
 /// A imagem abre sozinha quando o mestre a põe, mas quem fechou precisa poder
 /// voltar a ela quando quiser: enquanto estiver no mural, fica aqui para
 /// reabrir quantas vezes for. Só o mestre põe e tira ([souMestre]).
+///
+/// Legenda e acervo moram na [GaleriaMesa]; aqui é só o que está em destaque
+/// agora, sem precisar ler mais nada além do próprio mural.
 class MuralDaMesa extends StatefulWidget {
   final MesaService servico;
   final String mesaId;
@@ -48,17 +51,22 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
     final id = await escolherRetrato(context);
     if (id == null || !mounted) return;
 
-    final legenda = await _pedirLegenda();
-    if (!mounted) return;
+    final resultado = await _pedirLegenda();
+    if (resultado == null || !mounted) return;
+    final (legenda, mostrarAgora) = resultado;
 
     setState(() => _enviando = true);
     try {
       final bytes = ImagemStore.bytes(id);
       if (bytes == null) throw Exception('Não consegui ler a imagem.');
-      final imagemId = await servico.guardarNaGaleria(mesaId,
-          ImagemMural.preparar(bytes), ImagemMural.miniatura(bytes), legenda ?? '');
-      await servico.mostrarAgora(mesaId, imagemId);
-      // a cópia local só existia para chegar até aqui: o mural carrega a sua
+      final imagemId = await servico.guardarNaGaleria(
+        mesaId,
+        ImagemMural.preparar(bytes),
+        ImagemMural.miniatura(bytes),
+        legenda,
+      );
+      if (mostrarAgora) await servico.mostrarAgora(mesaId, imagemId);
+      // a cópia local só existia para chegar até aqui: a galeria guarda a sua
       await ImagemStore.excluir(id);
     } catch (e) {
       _erro(e);
@@ -67,9 +75,11 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
     }
   }
 
-  Future<String?> _pedirLegenda() {
+  /// null quando cancela. Do contrário, a legenda e se é para pôr em
+  /// destaque agora ou só guardar no acervo.
+  Future<(String, bool)?> _pedirLegenda() {
     final campo = TextEditingController();
-    return showDialog<String>(
+    return showDialog<(String, bool)>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Cores.pergaminho,
@@ -82,11 +92,16 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, ''),
-              child: const Text('Sem legenda')),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, campo.text.trim()),
-            child: const Text('Mostrar', style: TextStyle(color: Cores.indigo)),
+            onPressed: () => Navigator.pop(ctx, (campo.text.trim(), false)),
+            child: const Text('Guardar na galeria'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, (campo.text.trim(), true)),
+            child: const Text('Mostrar agora',
+                style: TextStyle(color: Cores.indigo)),
           ),
         ],
       ),
@@ -99,16 +114,6 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
     } catch (e) {
       _erro(e);
     }
-  }
-
-  void _abrirTelaCheia(String imagemBase64, String legenda) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => VisualizadorImagens(
-        imagens: const ['mural'],
-        bytesDiretos: {'mural': base64Decode(imagemBase64)},
-        legendas: {'mural': legenda},
-      ),
-    ));
   }
 
   @override
@@ -125,28 +130,20 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
           );
         }
         final item = snap.data;
-        return item == null ? _vazio() : _comImagem(item);
+        if (item == null) return _vazio();
+        // a key troca quando o destaque muda: o estado (e o Future já em
+        // andamento) reinicia do zero para a imagem nova, sem precisar
+        // comparar imagemId dentro do build para decidir se refaz a busca.
+        return _CartaoDestaque(
+          key: ValueKey(item.imagemId),
+          servico: servico,
+          mesaId: mesaId,
+          imagemId: item.imagemId,
+          souMestre: widget.souMestre,
+          aoTirar: _tirar,
+        );
       },
     );
-  }
-
-  /// O que está em destaque no mural só guarda o id: legenda e imagem cheia
-  /// moram na galeria. Guarda o Future por imagemId para não refazer a busca
-  /// a cada rebuild — só quando o destaque muda de fato.
-  String? _imagemIdCarregado;
-  Future<(String?, String)>? _futuroImagem;
-
-  Future<(String?, String)> _carregarImagem(String imagemId) async {
-    final cheia = await servico.imagemCheia(mesaId, imagemId);
-    final galeria = await servico.observarGaleria(mesaId).first;
-    var legenda = '';
-    for (final g in galeria) {
-      if (g.id == imagemId) {
-        legenda = g.legenda;
-        break;
-      }
-    }
-    return (cheia, legenda);
   }
 
   Widget _vazio() {
@@ -187,17 +184,54 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
       ),
     );
   }
+}
 
-  Widget _comImagem(ItemMural item) {
-    if (_imagemIdCarregado != item.imagemId) {
-      _imagemIdCarregado = item.imagemId;
-      _futuroImagem = _carregarImagem(item.imagemId);
-    }
-    return FutureBuilder<(String?, String)>(
-      future: _futuroImagem,
+/// A imagem em destaque, sozinha: busca a imagem cheia uma vez em
+/// `initState` e não de novo — a `key: ValueKey(imagemId)` do pai garante que
+/// uma imagem nova recria este estado, e uma imagem igual não teria por que
+/// refazer a busca.
+class _CartaoDestaque extends StatefulWidget {
+  final MesaService servico;
+  final String mesaId;
+  final String imagemId;
+  final bool souMestre;
+  final VoidCallback aoTirar;
+
+  const _CartaoDestaque({
+    super.key,
+    required this.servico,
+    required this.mesaId,
+    required this.imagemId,
+    required this.souMestre,
+    required this.aoTirar,
+  });
+
+  @override
+  State<_CartaoDestaque> createState() => _CartaoDestaqueState();
+}
+
+class _CartaoDestaqueState extends State<_CartaoDestaque> {
+  late final Future<String?> _futuro =
+      widget.servico.imagemCheia(widget.mesaId, widget.imagemId);
+
+  void _abrirTelaCheia(String imagemBase64) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => VisualizadorImagens(
+        imagens: const ['mural'],
+        bytesDiretos: {'mural': base64Decode(imagemBase64)},
+      ),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _futuro,
       builder: (context, snap) {
-        final dados = snap.data;
-        if (dados == null) {
+        // `hasData` não serve aqui: a busca pode terminar com `null` (imagem
+        // não existe mais), e `hasData` só olha se `data != null` — travaria
+        // no carregando para sempre. O que importa é se já terminou.
+        if (snap.connectionState != ConnectionState.done) {
           return const Card(
             child: Padding(
               padding: EdgeInsets.all(20),
@@ -205,7 +239,7 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
             ),
           );
         }
-        final (imagemBase64, legenda) = dados;
+        final imagemBase64 = snap.data;
         if (imagemBase64 == null) {
           return const Card(
             child: Padding(
@@ -220,7 +254,7 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
             child: Column(
               children: [
                 InkWell(
-                  onTap: () => _abrirTelaCheia(imagemBase64, legenda),
+                  onTap: () => _abrirTelaCheia(imagemBase64),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(6),
                     child: Image.memory(
@@ -234,23 +268,17 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
                     ),
                   ),
                 ),
-                if (legenda.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(legenda,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
                 Wrap(
                   alignment: WrapAlignment.center,
                   children: [
                     TextButton.icon(
-                      onPressed: () => _abrirTelaCheia(imagemBase64, legenda),
+                      onPressed: () => _abrirTelaCheia(imagemBase64),
                       icon: const Icon(Icons.open_in_full, size: 18),
                       label: const Text('Ver em tela cheia'),
                     ),
                     if (widget.souMestre)
                       TextButton.icon(
-                        onPressed: _tirar,
+                        onPressed: widget.aoTirar,
                         icon:
                             const Icon(Icons.visibility_off_outlined, size: 18),
                         label: const Text('Tirar do mural'),

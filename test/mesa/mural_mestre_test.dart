@@ -72,7 +72,9 @@ void main() {
         await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa da estação'));
     await abrir(t, mestre, souMestre: true);
 
-    expect(find.text('mapa da estação'), findsOneWidget);
+    // legenda mora na galeria agora; o mural só mostra o que está em
+    // destaque, então a prova de que a imagem carregou é o botão de abrir.
+    expect(find.text('Ver em tela cheia'), findsOneWidget);
     expect(find.text('Tirar do mural'), findsOneWidget);
   });
 
@@ -86,7 +88,7 @@ void main() {
     await t.pump(const Duration(seconds: 1));
 
     expect(find.text('Mostrar imagem para a mesa'), findsOneWidget);
-    expect(find.text('mapa'), findsNothing);
+    expect(find.text('Tirar do mural'), findsNothing);
   });
 
   /// O ponto do pedido: quem fechou a imagem precisa voltar a ela sem depender
@@ -97,7 +99,6 @@ void main() {
     final kaue = await jogadorNaMesa();
     await abrir(t, kaue, souMestre: false);
 
-    expect(find.text('mapa da estação'), findsOneWidget);
     expect(find.text('Ver em tela cheia'), findsOneWidget);
 
     for (var vez = 0; vez < 2; vez++) {
