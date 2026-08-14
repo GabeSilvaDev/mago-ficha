@@ -139,6 +139,7 @@ class _MuralDaMesaState extends State<MuralDaMesa> {
           servico: servico,
           mesaId: mesaId,
           imagemId: item.imagemId,
+          legenda: item.legenda,
           souMestre: widget.souMestre,
           aoTirar: _tirar,
         );
@@ -194,6 +195,7 @@ class _CartaoDestaque extends StatefulWidget {
   final MesaService servico;
   final String mesaId;
   final String imagemId;
+  final String legenda;
   final bool souMestre;
   final VoidCallback aoTirar;
 
@@ -202,6 +204,7 @@ class _CartaoDestaque extends StatefulWidget {
     required this.servico,
     required this.mesaId,
     required this.imagemId,
+    required this.legenda,
     required this.souMestre,
     required this.aoTirar,
   });
@@ -219,6 +222,7 @@ class _CartaoDestaqueState extends State<_CartaoDestaque> {
       builder: (_) => VisualizadorImagens(
         imagens: const ['mural'],
         bytesDiretos: {'mural': base64Decode(imagemBase64)},
+        legendas: {'mural': widget.legenda},
       ),
     ));
   }
@@ -236,6 +240,19 @@ class _CartaoDestaqueState extends State<_CartaoDestaque> {
             child: Padding(
               padding: EdgeInsets.all(20),
               child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+        // erro de rede não é a mesma coisa que imagem inexistente: a
+        // primeira é passageira (tenta de novo mais tarde), a segunda é
+        // definitiva — misturar as duas mensagens engana quem só perdeu a
+        // conexão por um instante.
+        if (snap.hasError) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(14),
+              child: Text(
+                  'Não consegui carregar a imagem. Confira sua conexão.'),
             ),
           );
         }
@@ -268,6 +285,12 @@ class _CartaoDestaqueState extends State<_CartaoDestaque> {
                     ),
                   ),
                 ),
+                if (widget.legenda.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(widget.legenda,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
                 Wrap(
                   alignment: WrapAlignment.center,
                   children: [

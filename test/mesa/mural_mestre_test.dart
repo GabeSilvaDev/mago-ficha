@@ -72,10 +72,26 @@ void main() {
         await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa da estação'));
     await abrir(t, mestre, souMestre: true);
 
-    // legenda mora na galeria agora; o mural só mostra o que está em
-    // destaque, então a prova de que a imagem carregou é o botão de abrir.
+    // a legenda viaja no ponteiro do mural (`ItemMural.legenda`) e volta a
+    // aparecer no próprio cartão em destaque, não só na galeria e no
+    // ouvinte — achado da revisão: a Task 8 tirou a legenda daqui achando
+    // cara a leitura, mas a Task 10 já pôs ela de graça no ponteiro.
+    expect(find.text('mapa da estação'), findsOneWidget);
     expect(find.text('Ver em tela cheia'), findsOneWidget);
     expect(find.text('Tirar do mural'), findsOneWidget);
+  });
+
+  testWidgets('a legenda do cartão em destaque vai junto para a tela cheia',
+      (t) async {
+    await mestre.mostrarAgora(mesaId,
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa da estação'));
+    await abrir(t, mestre, souMestre: true);
+
+    await t.tap(find.text('Ver em tela cheia'));
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    expect(find.text('mapa da estação'), findsOneWidget);
   });
 
   testWidgets('tirar do mural volta a oferecer mostrar', (t) async {
