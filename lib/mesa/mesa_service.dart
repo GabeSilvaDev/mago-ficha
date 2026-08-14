@@ -83,19 +83,32 @@ class ItemGaleria {
 
 /// O que está em destaque no mural agora. Aponta para uma imagem da galeria —
 /// carregar a imagem aqui faria todo aparelho baixá-la de novo a cada mudança.
+/// A legenda, porém, viaja junto (duplicando um dado que também mora no item
+/// da galeria): o mural já é um documento minúsculo, lido de novo a cada
+/// evento do stream por todo aparelho na mesa, e uma string a mais não pesa
+/// nada nele. A alternativa — buscar a legenda lendo a galeria a cada
+/// destaque — puxaria a coleção inteira (todas as miniaturas) só para ler uma
+/// `String`, e anularia exatamente a economia que motivou separar miniatura
+/// de imagem cheia nesta fase.
 class ItemMural {
   final String imagemId;
+  final String legenda;
   final DateTime em;
 
-  const ItemMural({required this.imagemId, required this.em});
+  const ItemMural({
+    required this.imagemId,
+    required this.legenda,
+    required this.em,
+  });
 
   factory ItemMural.fromJson(Map<String, dynamic> j) => ItemMural(
         imagemId: (j['imagemId'] ?? '') as String,
+        legenda: (j['legenda'] ?? '') as String,
         em: DateTime.parse(j['em'] as String),
       );
 
   Map<String, dynamic> toJson() =>
-      {'imagemId': imagemId, 'em': em.toIso8601String()};
+      {'imagemId': imagemId, 'legenda': legenda, 'em': em.toIso8601String()};
 }
 
 /// Tudo que o app precisa da mesa online.
@@ -181,7 +194,9 @@ abstract class MesaService {
   /// A imagem cheia, buscada só quando alguém abre. Null se não existe.
   Future<String?> imagemCheia(String mesaId, String imagemId);
 
-  /// Só o mestre. Põe a imagem em destaque: abre na tela de todos.
+  /// Só o mestre. Põe a imagem em destaque: abre na tela de todos. Copia a
+  /// legenda do item da galeria para dentro do [ItemMural] gravado — ver o
+  /// comentário da classe para o porquê.
   Future<void> mostrarAgora(String mesaId, String imagemId);
 
   /// Só o mestre. Tira o que estiver no mural.

@@ -425,7 +425,11 @@ class MesaFake implements MesaService {
   Future<void> mostrarAgora(String mesaId, String imagemId) async {
     _exigeLogin();
     _exigeMestre(mesaId);
-    mundo.mural[mesaId] = ItemMural(imagemId: imagemId, em: relogio());
+    // a legenda vem do item que já está em mãos aqui — ver o comentário de
+    // `ItemMural` para o porquê de ela ir junto do ponteiro
+    final legenda = mundo.galeria[mesaId]?[imagemId]?.legenda ?? '';
+    mundo.mural[mesaId] =
+        ItemMural(imagemId: imagemId, legenda: legenda, em: relogio());
     mundo.notificar(mesaId);
   }
 

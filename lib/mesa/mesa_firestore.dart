@@ -314,8 +314,17 @@ class MesaFirestore implements MesaService {
   @override
   Future<void> mostrarAgora(String mesaId, String imagemId) async {
     try {
-      await _mural(mesaId).set(
-          ItemMural(imagemId: imagemId, em: DateTime.now()).toJson());
+      // um `get()` do doc único da imagem em destaque — não da coleção
+      // inteira. Ver o comentário de `ItemMural` para o porquê de a legenda
+      // ir junto do ponteiro em vez de ficar só na galeria.
+      final item = await _galeria(mesaId).doc(imagemId).get();
+      final legenda =
+          item.exists ? (item.data()!['legenda'] ?? '') as String : '';
+      await _mural(mesaId).set(ItemMural(
+        imagemId: imagemId,
+        legenda: legenda,
+        em: DateTime.now(),
+      ).toJson());
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') throw SemPermissao();
       rethrow;

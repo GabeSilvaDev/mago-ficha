@@ -44,11 +44,10 @@ void main() {
     final id =
         await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa');
     await mestre.mostrarAgora(mesaId, id);
-    // dois pumps a mais que antes: o ouvinte busca a imagem cheia
-    // (`imagemCheia`) e, depois, a legenda na galeria (`observarGaleria`)
-    // antes de abrir — cada `await` novo em `_abrir` é mais um salto
-    // assíncrono, e `pump()` sem duração só avança um salto por vez
-    await t.pump();
+    // um pump a mais que antes: o ouvinte busca a imagem cheia
+    // (`imagemCheia`) antes de abrir, e essa busca é mais um salto
+    // assíncrono. A legenda vem de graça dentro do próprio `item` do mural
+    // (não é uma segunda busca), então não soma mais nenhum pump.
     await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
@@ -56,13 +55,12 @@ void main() {
     expect(find.byType(VisualizadorImagens), findsOneWidget);
   });
 
-  testWidgets('legenda da galeria aparece na tela cheia', (t) async {
+  testWidgets('legenda aparece na tela cheia', (t) async {
     final (mestre, mesaId) = await mesaAberta(t);
 
     final id = await mestre.guardarNaGaleria(
         mesaId, _imagemBase64(), 'mini', 'o mapa que vocês acham na mesa');
     await mestre.mostrarAgora(mesaId, id);
-    await t.pump();
     await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
@@ -90,7 +88,6 @@ void main() {
     await mestre.mostrarAgora(mesaId, id);
     await t.pump();
     await t.pump();
-    await t.pump();
     await t.pump(const Duration(seconds: 1));
 
     // fecha e provoca novas emissões sem imagem nova
@@ -116,7 +113,6 @@ void main() {
     await mestre.apagarDaGaleria(mesaId, id);
     await mestre.mostrarAgora(mesaId, id);
 
-    await t.pump();
     await t.pump();
     await t.pump();
     await t.pump(const Duration(seconds: 1));
