@@ -12,6 +12,12 @@ class SemPermissao implements Exception {
   String toString() => 'Só o mestre da mesa pode fazer isso.';
 }
 
+/// A chave de recuperação informada não é a da mesa.
+class ChaveErrada implements Exception {
+  @override
+  String toString() => 'Chave não confere.';
+}
+
 /// Uma ficha publicada numa mesa. É uma cópia: a verdade continua no Hive do
 /// dono. Só o dono escreve; o mestre lê.
 class FichaNaMesa {
@@ -105,11 +111,17 @@ abstract class MesaService {
   /// uid da sessão atual, ou null se ainda não entrou.
   String? get uid;
 
-  Future<Mesa> criarMesa(String nome, String meuNome);
+  /// Cria a mesa e devolve, junto, a chave de recuperação. A chave é mostrada
+  /// uma vez: quem a tem manda na mesa.
+  Future<(Mesa, String)> criarMesa(String nome, String meuNome);
 
   /// Entra pelo código. Lança [MesaNaoEncontrada] se não existir.
   /// Entrar de novo na mesma mesa é idempotente.
   Future<Mesa> entrarPorCodigo(String codigo, String meuNome);
+
+  /// Volta a ser o mestre de uma mesa provando a chave. Lança [ChaveErrada]
+  /// se não bater, [MesaNaoEncontrada] se o código não existir.
+  Future<Mesa> reassumirMesa(String codigo, String chave, String meuNome);
 
   /// Emite null quando a mesa deixa de existir (mestre apagou).
   Stream<Mesa?> observarMesa(String mesaId);

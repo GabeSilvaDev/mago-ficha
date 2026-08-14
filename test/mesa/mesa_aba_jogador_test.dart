@@ -44,7 +44,7 @@ void main() {
   testWidgets('jogador não vê as ações de mestre', (t) async {
     final dono = MesaFake('u-mestre');
     await dono.entrarAnonimo();
-    final mesa = await dono.criarMesa('Sombras', 'Gabriel');
+    final (mesa, _) = await dono.criarMesa('Sombras', 'Gabriel');
 
     await abrir(t, MesaFake('u-kaue', mundo: dono.mundo));
 

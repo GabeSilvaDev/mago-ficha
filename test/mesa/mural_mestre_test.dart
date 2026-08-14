@@ -37,7 +37,7 @@ void main() {
   setUp(() async {
     mestre = MesaFake('u-mestre');
     await mestre.entrarAnonimo();
-    final mesa = await mestre.criarMesa('Sombras', 'Gabriel');
+    final (mesa, _) = await mestre.criarMesa('Sombras', 'Gabriel');
     mesaId = mesa.id;
     codigo = mesa.codigo;
   });

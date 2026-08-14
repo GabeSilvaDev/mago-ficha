@@ -20,7 +20,7 @@ void main() {
   Future<(MesaFake, String)> mesaAberta(WidgetTester t) async {
     final mestre = MesaFake('u-mestre');
     await mestre.entrarAnonimo();
-    final mesa = await mestre.criarMesa('Sombras', 'Gabriel');
+    final (mesa, _) = await mestre.criarMesa('Sombras', 'Gabriel');
 
     // um serviço "recém-aberto", sem login: é assim que a home constrói o
     // ouvinte quando o app reabre já dentro da mesa

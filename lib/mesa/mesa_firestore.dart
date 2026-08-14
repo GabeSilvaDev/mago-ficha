@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'chave_mesa.dart';
 import 'codigo.dart';
 import 'firebase_app.dart';
 import 'mesa_service.dart';
@@ -32,7 +33,7 @@ class MesaFirestore implements MesaService {
       _db.collection('mesas').doc(id);
 
   @override
-  Future<Mesa> criarMesa(String nome, String meuNome) async {
+  Future<(Mesa, String)> criarMesa(String nome, String meuNome) async {
     final meuUid = await entrarAnonimo();
     final agora = DateTime.now();
 
@@ -64,12 +65,19 @@ class MesaFirestore implements MesaService {
       'visto': agora.toIso8601String(),
     });
 
-    return Mesa(
-      id: ref.id,
-      nome: nome,
-      codigo: codigo,
-      mestreUid: meuUid,
-      criadaEm: agora,
+    final chave = ChaveMesa.gerar();
+    // documento que ninguém lê: só as regras enxergam, com get()
+    await ref.collection('privado').doc('chave').set({'chave': chave});
+
+    return (
+      Mesa(
+        id: ref.id,
+        nome: nome,
+        codigo: codigo,
+        mestreUid: meuUid,
+        criadaEm: agora,
+      ),
+      chave,
     );
   }
 
@@ -108,6 +116,40 @@ class MesaFirestore implements MesaService {
       if (e.code == 'permission-denied') throw MesaNaoEncontrada();
       rethrow;
     }
+  }
+
+  @override
+  Future<Mesa> reassumirMesa(
+      String codigo, String chave, String meuNome) async {
+    final meuUid = await entrarAnonimo();
+    final alvo = CodigoMesa.normalizar(codigo);
+    final atalho = await _db.collection('codigos').doc(alvo).get();
+    if (!atalho.exists) throw MesaNaoEncontrada();
+    final mesaId = atalho.data()!['mesaId'] as String;
+
+    try {
+      // a tentativa vai num documento ilegível; a regra do update compara os
+      // dois com get() e só deixa passar se baterem
+      await _mesa(mesaId).collection('privado').doc('pedido').set({
+        'chave': ChaveMesa.normalizar(chave),
+        'uid': meuUid,
+      });
+      await _mesa(mesaId).update({'mestreUid': meuUid});
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') throw ChaveErrada();
+      rethrow;
+    }
+
+    await _mesa(mesaId).collection('membros').doc(meuUid).set({
+      'nome': meuNome,
+      'papel': 'mestre',
+      'entrouEm': DateTime.now().toIso8601String(),
+      'visto': DateTime.now().toIso8601String(),
+    });
+
+    final doc = await _mesa(mesaId).get();
+    if (!doc.exists) throw MesaNaoEncontrada();
+    return Mesa.fromJson(mesaId, doc.data()!);
   }
 
   @override

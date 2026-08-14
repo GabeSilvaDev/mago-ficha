@@ -122,7 +122,8 @@ class _MesaAbaState extends State<MesaAba> {
     final (nomeMesa, meuNome) = dados;
     await _comEspera(() async {
       final uid = await _servico.entrarAnonimo();
-      final mesa = await _servico.criarMesa(nomeMesa, meuNome);
+      // a chave é mostrada ao mestre pela Task 9; aqui só criamos a mesa
+      final (mesa, _) = await _servico.criarMesa(nomeMesa, meuNome);
       await MesaStore.entrar(EstadoMesa(
         mesaId: mesa.id,
         nome: mesa.nome,

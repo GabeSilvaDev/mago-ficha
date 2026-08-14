@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'chave_mesa.dart';
 import 'codigo.dart';
 import 'mesa_service.dart';
 import 'modelos.dart';
@@ -8,6 +9,7 @@ import 'modelos.dart';
 /// mestre e jogador na mesma mesa dentro de um teste.
 class MundoFake {
   final Map<String, Mesa> mesas = {};
+  final Map<String, String> chaves = {};
   final Map<String, Map<String, Membro>> membros = {};
   final Map<String, Map<String, FichaNaMesa>> fichas = {};
   final Map<String, Map<String, ItemGaleria>> galeria = {};
@@ -106,7 +108,7 @@ class MesaFake implements MesaService {
   }
 
   @override
-  Future<Mesa> criarMesa(String nome, String meuNome) async {
+  Future<(Mesa, String)> criarMesa(String nome, String meuNome) async {
     _exigeLogin();
     final id = mundo.novoId();
     final mesa = Mesa(
@@ -116,6 +118,8 @@ class MesaFake implements MesaService {
       mestreUid: _uid!,
       criadaEm: relogio(),
     );
+    final chave = ChaveMesa.gerar();
+    mundo.chaves[id] = chave;
     mundo.mesas[id] = mesa;
     mundo.membros[id] = {
       _uid!: Membro(
@@ -127,7 +131,7 @@ class MesaFake implements MesaService {
       )
     };
     mundo.notificar(id);
-    return mesa;
+    return (mesa, chave);
   }
 
   @override
@@ -232,12 +236,46 @@ class MesaFake implements MesaService {
     _exigeLogin();
     _exigeMestre(mesaId);
     mundo.mesas.remove(mesaId);
+    mundo.chaves.remove(mesaId);
     mundo.membros.remove(mesaId);
     mundo.fichas.remove(mesaId);
     mundo.galeria.remove(mesaId);
     mundo.cheias.remove(mesaId);
     mundo.mural.remove(mesaId);
     mundo.notificar(mesaId);
+  }
+
+  @override
+  Future<Mesa> reassumirMesa(
+      String codigo, String chave, String meuNome) async {
+    _exigeLogin();
+    final alvo = CodigoMesa.normalizar(codigo);
+    Mesa? mesa;
+    for (final m in mundo.mesas.values) {
+      if (m.codigo == alvo) mesa = m;
+    }
+    if (mesa == null) throw MesaNaoEncontrada();
+    if (mundo.chaves[mesa.id] != ChaveMesa.normalizar(chave)) {
+      throw ChaveErrada();
+    }
+
+    final nova = Mesa(
+      id: mesa.id,
+      nome: mesa.nome,
+      codigo: mesa.codigo,
+      mestreUid: _uid!,
+      criadaEm: mesa.criadaEm,
+    );
+    mundo.mesas[mesa.id] = nova;
+    (mundo.membros[mesa.id] ??= {})[_uid!] = Membro(
+      uid: _uid!,
+      nome: meuNome,
+      papel: PapelMesa.mestre,
+      entrouEm: relogio(),
+      visto: relogio(),
+    );
+    mundo.notificar(mesa.id);
+    return nova;
   }
 
   @override

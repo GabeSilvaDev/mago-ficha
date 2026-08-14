@@ -14,7 +14,7 @@ void main() {
     final servico = MesaFake('u-kaue');
     servico.entrarAnonimo();
     late String mesaId;
-    servico.criarMesa('Sombras', 'Kaue').then((m) => mesaId = m.id);
+    servico.criarMesa('Sombras', 'Kaue').then((r) => mesaId = r.$1.id);
     async.flushMicrotasks();
     return (servico, mesaId);
   }

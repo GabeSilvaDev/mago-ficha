@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mago_a_ascensao/mesa/chave_mesa.dart';
 import 'package:mago_a_ascensao/mesa/mesa_fake.dart';
 import 'package:mago_a_ascensao/mesa/mesa_service.dart';
 import 'package:mago_a_ascensao/mesa/modelos.dart';
@@ -7,7 +8,7 @@ import 'package:mago_a_ascensao/mesa/modelos.dart';
 Future<(MesaFake, Mesa)> mesaPronta() async {
   final mestre = MesaFake('u-mestre');
   await mestre.entrarAnonimo();
-  final mesa = await mestre.criarMesa('Sombras de SP', 'Gabriel');
+  final (mesa, _) = await mestre.criarMesa('Sombras de SP', 'Gabriel');
   return (mestre, mesa);
 }
 
@@ -364,5 +365,53 @@ void main() {
     await kaue.sair(mesa.id);
 
     expect(await mestre.observarFichas(mesa.id).first, isEmpty);
+  });
+
+  test('criar mesa devolve uma chave de recuperação', () async {
+    final mestre = MesaFake('u-mestre');
+    await mestre.entrarAnonimo();
+
+    final (mesa, chave) = await mestre.criarMesa('Sombras', 'Gabriel');
+
+    expect(ChaveMesa.valida(chave), isTrue);
+    expect(mesa.mestreUid, 'u-mestre');
+  });
+
+  test('com a chave certa, outro uid reassume a mesa', () async {
+    final mestre = MesaFake('u-mestre');
+    await mestre.entrarAnonimo();
+    final (mesa, chave) = await mestre.criarMesa('Sombras', 'Gabriel');
+    await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');
+
+    // mesmo humano, aparelho novo: uid diferente
+    final novo = MesaFake('u-mestre-2', mundo: mestre.mundo);
+    await novo.entrarAnonimo();
+    final devolta = await novo.reassumirMesa(mesa.codigo, chave, 'Gabriel');
+
+    expect(devolta.mestreUid, 'u-mestre-2');
+    // a galeria continua inteira
+    expect((await novo.observarGaleria(mesa.id).first).length, 1);
+    // e agora ele manda na mesa
+    await novo.guardarNaGaleria(mesa.id, 'C2', 'M2', 'outro mapa');
+  });
+
+  test('chave errada não devolve a mesa', () async {
+    final mestre = MesaFake('u-mestre');
+    await mestre.entrarAnonimo();
+    final (mesa, _) = await mestre.criarMesa('Sombras', 'Gabriel');
+
+    final ladrao = MesaFake('u-ladrao', mundo: mestre.mundo);
+    await ladrao.entrarAnonimo();
+
+    expect(() => ladrao.reassumirMesa(mesa.codigo, 'MAGO-AAAA-BBBB', 'X'),
+        throwsA(isA<ChaveErrada>()));
+    expect((await mestre.observarMesa(mesa.id).first)!.mestreUid, 'u-mestre');
+  });
+
+  test('reassumir com código que não existe avisa direito', () async {
+    final s = MesaFake('u1');
+    await s.entrarAnonimo();
+    expect(() => s.reassumirMesa('MAGO-ZZZZ', 'MAGO-AAAA-BBBB', 'X'),
+        throwsA(isA<MesaNaoEncontrada>()));
   });
 }

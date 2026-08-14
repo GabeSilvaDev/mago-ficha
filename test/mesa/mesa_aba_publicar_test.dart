@@ -35,7 +35,7 @@ void main() {
 
     mestre = MesaFake('u-mestre');
     await mestre.entrarAnonimo();
-    mesa = await mestre.criarMesa('Sombras', 'Gabriel');
+    (mesa, _) = await mestre.criarMesa('Sombras', 'Gabriel');
 
     jogador = MesaFake('u-kaue', mundo: mestre.mundo);
     await jogador.entrarAnonimo();
