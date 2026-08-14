@@ -306,16 +306,44 @@ fichas da sessão aparecem também na galeria do narrador, marcadas como
 
 **Um jogador não vê a ficha do outro.** Só o dono e o mestre.
 
-**Mural.** O mestre escolhe uma imagem e ela abre em tela cheia no aparelho de
-todo mundo na mesa, com o mesmo modo mostrar do caderno. Depois de fechada, ela
-continua na aba Mesa enquanto estiver no mural: quem quiser olhar de novo abre
-de novo, sem depender de o mestre mostrar outra vez. A imagem vai em base64
-dentro do documento — sem Firebase Storage, que hoje exige plano pago —, então o
-app reduz até caber com folga no limite de 1 MiB por documento.
+**Mural e galeria.** Toda imagem que o mestre sobe fica guardada na galeria da
+mesa, em ordem, e nada é sobrescrito — a mesa acumula, não troca uma imagem
+pela outra. Ao pôr uma imagem, o mestre escolhe entre **Guardar na galeria**
+(silencioso, só entra no acervo) e **Mostrar agora**, que abre em tela cheia no
+aparelho de todo mundo na mesa, com o mesmo modo mostrar do caderno — e
+continua na aba Mesa enquanto estiver em destaque, para quem fechou reabrir sem
+depender do mestre mostrar de novo. Qualquer um na mesa abre uma imagem antiga
+da galeria quando quiser: a grade carrega só miniaturas, e a imagem cheia é
+baixada nessa hora, não antes — sem a miniatura separada, abrir uma galeria com
+50 imagens baixaria uns 15 MB de uma vez, o que estouraria a cota gratuita do
+Firestore. A imagem cheia vai em base64 dentro do próprio documento — sem
+Firebase Storage, que hoje exige plano pago —, então o app reduz até caber com
+folga no limite de 1 MiB por documento.
 
-**Sair volta tudo ao normal.** Tirar a ficha da mesa, sair ou o mestre fechar a
-mesa: as cópias na nuvem somem e a ficha local continua com tudo que foi marcado
-durante a sessão.
+**A mesa dura entre sessões.** O aparelho lembra as mesas em que já entrou, e
+voltar é um toque na aba Mesa — o código só é necessário para quem nunca entrou
+nessa mesa. **Encerrar sessão** tira todo mundo da lista de membros (inclusive
+o mestre) e retira as fichas publicadas, mas a mesa, o código e a galeria
+continuam de pé, para a mesma crônica se reencontrar no sábado seguinte.
+**Apagar mesa** é outra coisa: separado, irreversível, leva a galeria junto, e
+por isso exige digitar o nome da mesa para confirmar — um toque errado não some
+com meses de sessão.
+
+**Chave de recuperação.** Ao criar a mesa, o app mostra uma chave nesse formato
+— `MAGO-XXXX-XXXX` — uma única vez; depois disso ela não aparece de novo em
+lugar nenhum. Ela existe porque o login é anônimo e a identidade do mestre vive
+só no aparelho: limpar os dados do app ou trocar de celular destrói o uid, e
+sem a chave a mesa ficaria sem dono, com a galeria inteira presa numa mesa que
+ninguém mais comanda. Com a chave em mãos, o mestre reassume a mesa em
+qualquer aparelho, mesmo um em que nunca tinha entrado. **Quem tem a chave
+manda na mesa** — o peso dela é o de uma senha, e pede o mesmo cuidado. Ela
+fica guardada num documento que ninguém consegue ler: as regras de segurança
+do Firestore não dão `read` a esse documento para ninguém, nem ao mestre —
+só as próprias regras a alcançam, com `get()`, na hora de comparar.
+
+**Sair volta tudo ao normal.** Tirar a ficha da mesa, sair ou o mestre encerrar
+a sessão: as cópias na nuvem somem e a ficha local continua com tudo que foi
+marcado durante a sessão.
 
 O roteiro de verificação manual — o que não dá para testar sem dois aparelhos de
 verdade — está em [`docs/mesa-verificacao-manual.md`](docs/mesa-verificacao-manual.md).
