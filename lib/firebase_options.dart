@@ -7,9 +7,25 @@ import 'package:flutter/foundation.dart'
 /// Escrito à mão em vez de gerado pelo `flutterfire configure` — o container
 /// deste projeto só tem o SDK do Flutter, sem Node para a CLI do Firebase.
 ///
-/// **Pode ficar no git.** Chave de cliente Firebase é pública por desenho: ela
-/// identifica o projeto, não autoriza nada. Quem protege a mesa é
-/// `firestore.rules`. O que nunca entra aqui é chave de conta de serviço.
+/// **Pode ficar no git — mas só porque as chaves estão restritas.** Chave de
+/// cliente Firebase é pública por desenho: ela vai dentro do APK e do bundle
+/// web, e qualquer um a extrai com `strings` do apk que você distribui. Ela
+/// identifica o projeto e não dá acesso a dado nenhum — quem protege a mesa é
+/// `firestore.rules`.
+///
+/// O que NÃO é automático, e por isso está anotado aqui: chave sem restrição
+/// de uso pode ser gastada por qualquer um fora do app (criar contas anônimas
+/// em massa, por exemplo, e queimar a cota gratuita). No console do Google
+/// Cloud, em APIs e serviços → Credenciais, as duas estão presas:
+///
+///   Android key — restrita aos pacotes `com.kodem.mago_a_ascensao` e
+///                 `.beta`, com a assinatura SHA-1 do keystore de release
+///   Browser key — restrita aos referenciadores `gabesilvadev.github.io/*`,
+///                 `localhost:*/*` e `192.168.15.7:*/*`
+///
+/// Ao publicar em domínio novo, acrescente o referenciador lá, senão o login
+/// anônimo passa a falhar só naquele endereço. Chave de conta de serviço não
+/// entra aqui nunca — essa sim é segredo de verdade.
 ///
 /// Cada canal do app tem seu próprio registro no console (`applicationId`
 /// diferente), então o build do beta precisa dizer quem é:
