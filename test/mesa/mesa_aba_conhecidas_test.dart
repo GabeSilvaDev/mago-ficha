@@ -45,6 +45,29 @@ void main() {
     expect(find.text('Entrar com código'), findsOneWidget);
   });
 
+  // Achado da revisão final: a chave só existe na cabeça de quem anotou e em
+  // `MesaConhecida.chave` — esquecer uma mesa em que a pessoa é mestre apaga
+  // a chave em silêncio, e o texto antigo ("alguém precisa te passar o
+  // código de novo") era falso para o mestre, que voltaria como jogador da
+  // própria crônica. Não confirma o diálogo: só mostrar já basta para o
+  // teste, e evita a escrita no Hive que `MesaStore.esquecer` faria.
+  testWidgets(
+      'esquecer mesa em que sou mestre avisa que a mestria some para sempre',
+      (t) async {
+    await t.pumpWidget(
+        MaterialApp(home: Scaffold(body: MesaAba(servico: mestre))));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+
+    await t.tap(find.byTooltip('Esquecer esta mesa'));
+    await t.pump();
+
+    expect(find.textContaining('perde a mestria'), findsOneWidget);
+
+    await t.tap(find.text('Cancelar'));
+    await t.pumpAndSettle();
+  });
+
   group('apagar mesa: gate do nome', () {
     // Além do que o setUp de fora já prepara (mesa criada e conhecida), este
     // grupo entra na mesa: o gate do nome só aparece com a tela já dentro

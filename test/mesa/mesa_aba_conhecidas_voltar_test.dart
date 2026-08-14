@@ -52,6 +52,14 @@ void main() {
 
     await t.tap(find.text('Sombras'));
     await t.pump();
+    // duas escritas em sequência agora (achado da revisão: `_voltarPara`
+    // passou a chamar `MesaStore.lembrar` também, não só `MesaStore.entrar`
+    // — sem isso `papel` e `meuNome` na lista de mesas conhecidas nunca se
+    // atualizavam por este caminho), por isso dois `runAsync` — mesmo padrão
+    // de `tocarGravando` em mesa_aba_test.dart.
+    await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)));
+    await t.pump();
     await t.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 150)));
     await t.pump();

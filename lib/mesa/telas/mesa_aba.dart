@@ -40,6 +40,13 @@ class _MesaAbaState extends State<MesaAba> {
   bool _sessaoPronta = false;
   String? _erroSessao;
 
+  /// Já disparou a checagem de "a mesa sumiu" para a entrada atual. Sem isto
+  /// o `StreamBuilder` reconstruiria e agendaria a checagem de novo a cada
+  /// frame enquanto `snap.data` continuar nulo — um `entrarPorId` por
+  /// rebuild em vez de um só por saída. Zera sempre que uma mesa nova é
+  /// aberta (`_criar`, `_entrar`, `_voltarPara`, `_reassumir`, `_religar`).
+  bool _cuidandoDaSaida = false;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +65,7 @@ class _MesaAbaState extends State<MesaAba> {
       _ligarPonto();
       final fichaId = estado.fichaPublicadaId;
       if (fichaId != null) _ligarEspelho(estado.mesaId, fichaId);
+      _cuidandoDaSaida = false;
       setState(() => _sessaoPronta = true);
     } catch (e) {
       if (!mounted) return;
@@ -141,6 +149,7 @@ class _MesaAbaState extends State<MesaAba> {
         meuNome: meuNome,
       ));
       _ligarPonto();
+      _cuidandoDaSaida = false;
       _sessaoPronta = true;
     });
     // só depois da mesa entrar de vez: a chave é mostrada uma vez, e não pode
@@ -176,6 +185,7 @@ class _MesaAbaState extends State<MesaAba> {
         meuNome: meuNome,
       ));
       _ligarPonto();
+      _cuidandoDaSaida = false;
       _sessaoPronta = true;
     });
   }
@@ -192,27 +202,57 @@ class _MesaAbaState extends State<MesaAba> {
       // cai num padrão pelo papel guardado.
       final meuNome = m.meuNome ??
           (m.papel == PapelMesa.mestre ? 'Mestre' : 'Jogador');
-      final mesa = await _servico.entrarPorId(m.mesaId, meuNome);
+      Mesa mesa;
+      try {
+        mesa = await _servico.entrarPorId(m.mesaId, meuNome);
+      } on MesaNaoEncontrada {
+        // a mesa não existe mais: a entrada na lista está morta, tira ela
+        // daqui — senão fica para sempre convidando a tocar de novo
+        await MesaStore.esquecer(m.mesaId);
+        rethrow;
+      }
+      final papel = mesa.mestreUid == uid ? PapelMesa.mestre : PapelMesa.jogador;
       await MesaStore.entrar(EstadoMesa(
         mesaId: mesa.id,
         nome: mesa.nome,
         uid: uid,
-        papel: mesa.mestreUid == uid ? PapelMesa.mestre : PapelMesa.jogador,
+        papel: papel,
         chave: m.chave,
       ));
+      // sem isto, `papel` e `meuNome` na lista de mesas conhecidas nunca se
+      // atualizavam por este caminho — era o único dos quatro jeitos de
+      // entrar que não gravava aqui
+      await MesaStore.lembrar(MesaConhecida(
+        mesaId: mesa.id,
+        nome: mesa.nome,
+        papel: papel,
+        chave: m.chave,
+        meuNome: meuNome,
+      ));
       _ligarPonto();
+      _cuidandoDaSaida = false;
       _sessaoPronta = true;
     });
   }
 
   Future<void> _esquecer(MesaConhecida m) async {
+    // sem a chave anotada em outro lugar, esquecer uma mesa em que a pessoa é
+    // mestre destrói o único jeito de recuperá-la: ela volta a poder entrar
+    // pelo código, mas como jogadora da própria crônica, não mais como mestra
+    final perdeAMestria = m.papel == PapelMesa.mestre && m.chave != null;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Cores.pergaminho,
         title: const Text('Esquecer esta mesa?'),
-        content: Text('O aparelho para de lembrar "${m.nome}". Para voltar, '
-            'alguém precisa te passar o código de novo.'),
+        content: Text(perdeAMestria
+            ? 'O aparelho para de lembrar "${m.nome}" — e a chave de '
+                'recuperação, que só existe aqui, some junto. Sem ela '
+                'anotada em outro lugar, você perde a mestria desta mesa '
+                'para sempre: mesmo com o código, quem entrar de novo entra '
+                'como jogador.'
+            : 'O aparelho para de lembrar "${m.nome}". Para voltar, '
+                'alguém precisa te passar o código de novo.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -257,6 +297,7 @@ class _MesaAbaState extends State<MesaAba> {
         meuNome: meuNome,
       ));
       _ligarPonto();
+      _cuidandoDaSaida = false;
       _sessaoPronta = true;
     });
   }
@@ -601,30 +642,64 @@ class _MesaAbaState extends State<MesaAba> {
     );
   }
 
+  /// A mesa sumiu do stream — como `null` (documento apagado) ou como erro
+  /// (o registro de membro caiu antes do documento, e a regra nega a
+  /// leitura: mesmo efeito visível, `permission-denied`). Os dois casos
+  /// possíveis por trás disso são bem diferentes: `encerrarSessao` (a mesa
+  /// continua de pé, reversível) e `apagarMesa` (foi para sempre). Só
+  /// `entrarPorId` sabe dizer qual foi: se a mesa ainda existir, ele
+  /// readmite este uid como membro dela e devolve normalmente; se não
+  /// existir mais, lança `MesaNaoEncontrada`. Uma falha de rede no meio do
+  /// caminho é tratada como sessão encerrada — o caso reversível — para não
+  /// prender ninguém nem destruir uma mesa conhecida só porque a internet
+  /// caiu.
+  Future<void> _tratarMesaSumida(EstadoMesa estado) async {
+    final conhecida =
+        MesaStore.conhecidas().where((m) => m.mesaId == estado.mesaId);
+    final meuNome = conhecida.isEmpty ? null : conhecida.first.meuNome;
+    final nomeParaEntrar =
+        meuNome ?? (estado.papel == PapelMesa.mestre ? 'Mestre' : 'Jogador');
+    var apagada = false;
+    try {
+      await _servico.entrarPorId(estado.mesaId, nomeParaEntrar);
+    } on MesaNaoEncontrada {
+      apagada = true;
+    } catch (_) {
+      // rede fora (ou qualquer outro erro): trata como sessão encerrada
+    }
+    if (apagada) await MesaStore.esquecer(estado.mesaId);
+    await _voltarParaOffline(
+        apagada ? 'Esta mesa foi apagada.' : 'A sessão foi encerrada.');
+  }
+
   Widget _naMesa(EstadoMesa estado) {
-    final souMestre = estado.papel == PapelMesa.mestre;
     return StreamBuilder<Mesa?>(
       stream: _servico.observarMesa(estado.mesaId),
       builder: (context, snap) {
+        final mesa = snap.data;
+        // deriva de quem manda na mesa AGORA (`mestreUid` do documento), não
+        // do que foi gravado na entrada e nunca mais reavaliado: o mestre
+        // pode reassumir a mesa noutro aparelho enquanto este continua
+        // aberto, e sem isso o aparelho antigo seguiria mostrando controles
+        // de mestre que a regra passa a recusar. Enquanto a primeira
+        // emissão do stream não chega, cai no que foi gravado na entrada.
+        final souMestre = mesa != null
+            ? mesa.mestreUid == estado.uid
+            : estado.papel == PapelMesa.mestre;
+
         // `hasData` não serve aqui: ela só olha se `data != null`, e um null
         // de verdade (a mesa sumiu) sempre bate com isso — travaria
         // `hasData` em false para sempre. O que importa é já termos recebido
-        // alguma coisa (não estar mais esperando a primeira emissão).
-        if (snap.connectionState == ConnectionState.active &&
-            snap.data == null) {
-          // a mesa sumiu enquanto estávamos nela: se este aparelho ainda a
-          // conhece, a mesa continua existindo e só a sessão foi encerrada;
-          // se não conhece mais, ela foi apagada de verdade
-          final aindaConhecida =
-              MesaStore.conhecidas().any((m) => m.mesaId == estado.mesaId);
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (!aindaConhecida) await MesaStore.esquecer(estado.mesaId);
-            _voltarParaOffline(aindaConhecida
-                ? 'A sessão foi encerrada.'
-                : 'Esta mesa foi apagada.');
-          });
+        // alguma coisa (não estar mais esperando a primeira emissão) — ou um
+        // erro, que é a outra cara do mesmo sumiço (ver `_tratarMesaSumida`).
+        final sumiu = snap.hasError ||
+            (snap.connectionState == ConnectionState.active &&
+                snap.data == null);
+        if (sumiu && !_cuidandoDaSaida) {
+          _cuidandoDaSaida = true;
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _tratarMesaSumida(estado));
         }
-        final mesa = snap.data;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
