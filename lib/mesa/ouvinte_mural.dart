@@ -65,7 +65,6 @@ class _OuvinteMuralState extends State<OuvinteMural> {
   void _aoMudar(ItemMural? item) {
     if (item == null || item.imagemId.isEmpty) return;
     if (_ultimoAberto != null && !item.em.isAfter(_ultimoAberto!)) return;
-    _ultimoAberto = item.em;
     _abrir(item);
   }
 
@@ -73,6 +72,12 @@ class _OuvinteMuralState extends State<OuvinteMural> {
     final imagem =
         await widget.servico.imagemCheia(widget.mesaId, item.imagemId);
     if (imagem == null || !mounted) return;
+
+    // só marca como aberto DEPOIS do sucesso: se a busca tivesse marcado
+    // antes e falhasse (rede fora) ou voltasse null, a guarda acima
+    // descartaria as próximas emissões do mesmo ponteiro para sempre — este
+    // aparelho nunca mais abriria aquela imagem, mesmo com a rede de volta.
+    _ultimoAberto = item.em;
 
     // a legenda já vem dentro do próprio `item` (ver o comentário de
     // `ItemMural`): ler a galeria inteira aqui só para pegar uma `String`

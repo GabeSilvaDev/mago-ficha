@@ -22,8 +22,19 @@ void main() {
     await mestre.entrarAnonimo();
     final (mesa, _) = await mestre.criarMesa('Sombras', 'Gabriel');
 
+    // o jogador já entrou nesta mesa antes: em produção o registro de membro
+    // dele já existe no Firestore de uma entrada anterior, sobrevivendo ao
+    // fechar e reabrir o app (é o próprio anonymous uid que persiste). Sem
+    // este passo o `recemAberto` de baixo simularia um uid que nunca esteve
+    // na mesa — e a checagem de permissão do fake (que este mesmo bloqueador
+    // deixou de furar) recusaria a leitura.
+    final primeiraEntrada = MesaFake('u-jogador', mundo: mestre.mundo);
+    await primeiraEntrada.entrarAnonimo();
+    await primeiraEntrada.entrarPorCodigo(mesa.codigo, 'Kaue');
+
     // um serviço "recém-aberto", sem login: é assim que a home constrói o
-    // ouvinte quando o app reabre já dentro da mesa
+    // ouvinte quando o app reabre já dentro da mesa — instância nova, mas
+    // mesmo uid (persistido) e mesmo mundo compartilhado
     final recemAberto = MesaFake('u-jogador', mundo: mestre.mundo);
     await t.pumpWidget(MaterialApp(
       home: OuvinteMural(
@@ -118,5 +129,41 @@ void main() {
     await t.pump(const Duration(seconds: 1));
 
     expect(find.byType(VisualizadorImagens), findsNothing);
+  });
+
+  /// Achado da revisão final: `_ultimoAberto` era gravado ANTES da busca da
+  /// imagem cheia. Se a busca falhasse (rede fora) ou voltasse `null`, a
+  /// guarda que evita reabrir a mesma imagem a cada emissão passava a
+  /// descartar TODAS as emissões seguintes do mesmo ponteiro — o aparelho
+  /// nunca mais abriria aquela imagem, mesmo com a rede de volta.
+  testWidgets(
+      'falha ao buscar a imagem não queima o ponteiro: reemissão do mesmo mural tenta de novo',
+      (t) async {
+    final (mestre, mesaId) = await mesaAberta(t);
+    final id =
+        await mestre.guardarNaGaleria(mesaId, _imagemBase64(), 'mini', 'mapa');
+    // simula a falha: a imagem cheia some depois de guardada (rede caiu
+    // bem no meio, por exemplo) — `imagemCheia` volta `null` na primeira
+    // busca do ouvinte.
+    mestre.mundo.cheias[mesaId]!.remove(id);
+    await mestre.mostrarAgora(mesaId, id);
+
+    await t.pump();
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    // a primeira tentativa falhou: nada abre ainda
+    expect(find.byType(VisualizadorImagens), findsNothing);
+
+    // a rede volta: a imagem passa a existir, e o MESMO ponteiro (mesma
+    // `em`, mesmo `imagemId`) é reemitido por qualquer mexida na mesa — aqui,
+    // um bater de ponto, sem que o mestre precise mostrar de novo
+    mestre.mundo.cheias[mesaId]![id] = _imagemBase64();
+    await mestre.baterPonto(mesaId);
+    await t.pump();
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    expect(find.byType(VisualizadorImagens), findsOneWidget);
   });
 }
