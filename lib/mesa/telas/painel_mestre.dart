@@ -82,11 +82,16 @@ class PainelMestre extends StatelessWidget {
                     Text(_vitalidade(ficha),
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
+                    // Quintessência e Paradoxo têm dois valores cada: o da
+                    // criação (`quintessencia`, `paradoxo`) e o da mesa
+                    // (`quintAtual`, `paradoxoAtual`), que é o que os +/− da
+                    // ficha mexem. Aqui é acompanhamento de sessão, então vale
+                    // o segundo — como já valia para a Força de Vontade.
                     Text(
                       'Arete ${ficha.areteFinal} · '
                       'FdV ${ficha.fdvAtual}/${ficha.forcaVontadeFinal} · '
-                      'Quint. ${ficha.quintessencia} · '
-                      'Paradoxo ${ficha.paradoxo} · '
+                      'Quint. ${ficha.quintAtual} · '
+                      'Paradoxo ${ficha.paradoxoAtual} · '
                       'XP ${ficha.experiencia}',
                       style: const TextStyle(fontSize: 12),
                     ),

@@ -54,6 +54,32 @@ void main() {
     expect(find.textContaining('Arete'), findsOneWidget);
   });
 
+  /// Quintessência e Paradoxo têm dois valores na ficha: o da criação e o da
+  /// mesa. O painel mostrava o da criação, então o mestre via 0 parado
+  /// enquanto o jogador gastava e ganhava durante a sessão.
+  testWidgets('mostra a Quintessência e o Paradoxo da mesa, não os da criação',
+      (t) async {
+    final kaue = MesaFake('u-kaue', mundo: mestre.mundo);
+    await kaue.entrarAnonimo();
+    await kaue.entrarPorCodigo(codigo, 'Kaue');
+
+    final f = Ficha.criar();
+    f.data['nome'] = 'Cotoia';
+    f.quintAtual = 7;
+    f.paradoxoAtual = 3;
+    f.fdvAtual = 4;
+    await kaue.publicarFicha(mesaId, FichaIO.paraJson(f), 'Cotoia');
+
+    await t.pumpWidget(MaterialApp(
+        home: Scaffold(body: PainelMestre(servico: mestre, mesaId: mesaId))));
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+
+    expect(find.textContaining('Quint. 7'), findsOneWidget);
+    expect(find.textContaining('Paradoxo 3'), findsOneWidget);
+    expect(find.textContaining('FdV 4/'), findsOneWidget);
+  });
+
   testWidgets('sem fichas publicadas, explica o que fazer', (t) async {
     await t.pumpWidget(MaterialApp(
         home: Scaffold(body: PainelMestre(servico: mestre, mesaId: mesaId))));
