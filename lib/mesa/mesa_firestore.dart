@@ -195,6 +195,10 @@ class MesaFirestore implements MesaService {
         'uid': meuUid,
       });
       await _mesa(mesaId).update({'mestreUid': meuUid});
+      // some com o pedido depois do sucesso: a chave em claro não fica
+      // parada no documento depois de já ter cumprido o papel dela — as
+      // regras já deixam o mestre apagar `privado/pedido`
+      await _mesa(mesaId).collection('privado').doc('pedido').delete();
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') throw ChaveErrada();
       rethrow;
