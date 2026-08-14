@@ -86,6 +86,10 @@ void main() {
     // apagada).
     await t.pump();
     await t.pump();
+    await t.pump();
+    await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)));
+    await t.pump();
     await t.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 150)));
     await t.pump();
@@ -96,5 +100,13 @@ void main() {
     // a mesa CONTINUA na lista de mesas conhecidas — reversível
     expect(MesaStore.conhecidas().any((m) => m.mesaId == mesaId), isTrue);
     expect(find.text('Sombras'), findsOneWidget);
+
+    // achado da re-revisão: a sonda (`entrarPorId`) recadastra kaue como
+    // membro por baixo dos panos antes de conseguir ler a mesa — sem
+    // desfazer essa escrita, "encerrar sessão tira todo mundo" deixaria de
+    // valer. Depois do app tratar a saída, kaue não pode mais aparecer
+    // entre os membros.
+    final membros = await mestre.observarMembros(mesaId).first;
+    expect(membros.any((m) => m.uid == 'u-kaue'), isFalse);
   });
 }

@@ -667,7 +667,24 @@ class _MesaAbaState extends State<MesaAba> {
     } catch (_) {
       // rede fora (ou qualquer outro erro): trata como sessão encerrada
     }
-    if (apagada) await MesaStore.esquecer(estado.mesaId);
+    if (apagada) {
+      await MesaStore.esquecer(estado.mesaId);
+    } else {
+      // a sonda acima só existe para descobrir se a mesa ainda está de pé,
+      // mas `entrarPorId` grava o registro de membro ANTES de ler a mesa —
+      // é a ordem que a regra de segurança exige, não dá para inverter.
+      // Isso dá à sonda um efeito colateral: quem tinha sido posto para
+      // fora (por `encerrarSessao` ou por `removerMembro`) se recadastra
+      // sozinho só de rodar esta checagem. Sem desfazer, "encerrar sessão
+      // tira todo mundo" deixaria de valer, e alguém removido reapareceria
+      // na lista com a bolinha verde. `sair` desfaz exatamente essa
+      // escrita; se falhar, segue mesmo assim — a pessoa já está saindo da
+      // tela e vendo a mensagem certa, o pior caso é um membro órfão até o
+      // próximo evento na mesa.
+      try {
+        await _servico.sair(estado.mesaId);
+      } catch (_) {}
+    }
     await _voltarParaOffline(
         apagada ? 'Esta mesa foi apagada.' : 'A sessão foi encerrada.');
   }
