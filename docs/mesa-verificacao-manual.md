@@ -40,7 +40,7 @@ Chame de **A** o mestre e **B** o jogador. Marque o resultado ao lado.
 | 2 | B fecha o app e espera | em até 90s a bolinha de B fica cinza na tela de A | |
 | 3 | A troca o código; um terceiro tenta o antigo | "Não encontrei essa mesa." | |
 | 4 | A remove B | B volta sozinho para a tela "não está em nenhuma mesa" | |
-| 5 | A fecha a mesa | B recebe "O mestre encerrou a mesa." | |
+| 5 | A encerra a sessão | B recebe "A sessão foi encerrada."; a mesa continua na lista de mesas conhecidas dos dois | |
 | 6 | B tenta editar a mesa (simulador de regras do console, uid de B, `update` em `mesas/{id}`) | **negado** | |
 | 7 | Alguém que não é membro tenta `get` em `mesas/{id}` (simulador) | **negado** | |
 | 8 | A está na mesa; desligar o wifi, mexer no app, religar | a lista volta a atualizar sem reiniciar o app | |
@@ -58,7 +58,7 @@ quem não usa mesa.
 | 12 | C (outro jogador) entra e publica a ficha dele | C **não** vê a ficha de B em lugar nenhum | |
 | 13 | A abre a ficha de B | sem lápis de editar; os `+`/`−` não respondem | |
 | 14 | B sai da mesa | a ficha some do painel de A; no aparelho de B o dano continua marcado | |
-| 15 | A fecha a mesa com fichas publicadas | some tudo; ninguém fica com cópia órfã no Firestore | |
+| 15 | A encerra a sessão com fichas publicadas | as fichas somem; ninguém fica com cópia órfã no Firestore | |
 
 ## Fase 3 — mural de imagens
 
@@ -71,7 +71,7 @@ quem não usa mesa.
 | 19b | B fecha a imagem e volta na aba Mesa | a miniatura continua lá; *Ver em tela cheia* reabre quantas vezes quiser | |
 | 20 | B fecha a imagem e alguém entra na mesa | a imagem **não** reabre: só o que é novo abre | |
 | 21 | B tenta `set` em `mesas/{id}/mural/atual` (simulador de regras) | **negado** | |
-| 22 | A fecha a mesa com imagem no mural | o mural some junto, sem documento órfão | |
+| 22 | A apaga a mesa com imagem no mural | o mural some junto, sem documento órfão | |
 
 ## Fase 4 — mesa permanente e galeria
 
@@ -89,8 +89,3 @@ quem não usa mesa.
 Console do Firebase → **Firestore Database** → aba **Regras** → **Simulador**.
 Escolha a operação, o caminho (`/mesas/<id>`) e marque *Autenticado* com o uid
 que quer testar. O uid aparece no console em **Authentication → Usuários**.
-
-## Fases 2 e 3
-
-Os itens de ficha espelhada e mural entram aqui quando essas fases forem
-implementadas — ver os planos em `docs/superpowers/plans/`.
