@@ -16,12 +16,17 @@ class EstadoMesa {
   /// Ficha local espelhada nesta mesa (Fase 2). Null = ainda não publicou.
   final String? fichaPublicadaId;
 
+  /// Só o mestre tem. Repassada por `comFicha` — senão publicar uma ficha
+  /// apagaria a chave do estado atual.
+  final String? chave;
+
   const EstadoMesa({
     required this.mesaId,
     required this.nome,
     required this.uid,
     required this.papel,
     this.fichaPublicadaId,
+    this.chave,
   });
 
   EstadoMesa comFicha(String? fichaId) => EstadoMesa(
@@ -30,6 +35,7 @@ class EstadoMesa {
         uid: uid,
         papel: papel,
         fichaPublicadaId: fichaId,
+        chave: chave,
       );
 
   factory EstadoMesa.fromJson(Map<String, dynamic> j) => EstadoMesa(
@@ -38,6 +44,7 @@ class EstadoMesa {
         uid: j['uid'] as String,
         papel: j['papel'] == 'mestre' ? PapelMesa.mestre : PapelMesa.jogador,
         fichaPublicadaId: j['fichaPublicadaId'] as String?,
+        chave: j['chave'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -46,6 +53,40 @@ class EstadoMesa {
         'uid': uid,
         'papel': papel.name,
         if (fichaPublicadaId != null) 'fichaPublicadaId': fichaPublicadaId,
+        if (chave != null) 'chave': chave,
+      };
+}
+
+/// Uma mesa em que este aparelho já entrou. Fica guardada mesmo depois de sair:
+/// jogamos todo sábado, e ninguém quer ditar o código toda semana.
+class MesaConhecida {
+  final String mesaId;
+  final String nome;
+  final PapelMesa papel;
+
+  /// Só o mestre tem. É o que permite reassumir a mesa noutro aparelho — e é
+  /// justamente o que se perde ao limpar os dados do app.
+  final String? chave;
+
+  const MesaConhecida({
+    required this.mesaId,
+    required this.nome,
+    required this.papel,
+    this.chave,
+  });
+
+  factory MesaConhecida.fromJson(Map<String, dynamic> j) => MesaConhecida(
+        mesaId: j['mesaId'] as String,
+        nome: (j['nome'] ?? '') as String,
+        papel: j['papel'] == 'mestre' ? PapelMesa.mestre : PapelMesa.jogador,
+        chave: j['chave'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'mesaId': mesaId,
+        'nome': nome,
+        'papel': papel.name,
+        if (chave != null) 'chave': chave,
       };
 }
 
@@ -73,4 +114,35 @@ class MesaStore {
       _box.put(_chave, jsonEncode(e.toJson()));
 
   static Future<void> limpar() async => _box.delete(_chave);
+
+  static const String _chaveConhecidas = 'conhecidas';
+
+  static List<MesaConhecida> conhecidas() {
+    final s = _box.get(_chaveConhecidas);
+    if (s == null) return const [];
+    final lista = jsonDecode(s) as List;
+    return [
+      for (final m in lista)
+        MesaConhecida.fromJson((m as Map).cast<String, dynamic>())
+    ];
+  }
+
+  static Future<void> lembrar(MesaConhecida mesa) async {
+    final atuais = conhecidas().where((m) => m.mesaId != mesa.mesaId).toList();
+    await _box.put(_chaveConhecidas,
+        jsonEncode([mesa, ...atuais].map((m) => m.toJson()).toList()));
+  }
+
+  static Future<void> esquecer(String mesaId) async {
+    final restantes =
+        conhecidas().where((m) => m.mesaId != mesaId).map((m) => m.toJson());
+    await _box.put(_chaveConhecidas, jsonEncode(restantes.toList()));
+  }
+
+  static String? chaveDe(String mesaId) {
+    for (final m in conhecidas()) {
+      if (m.mesaId == mesaId) return m.chave;
+    }
+    return null;
+  }
 }
