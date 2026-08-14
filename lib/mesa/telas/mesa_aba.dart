@@ -138,6 +138,7 @@ class _MesaAbaState extends State<MesaAba> {
         nome: mesa.nome,
         papel: PapelMesa.mestre,
         chave: chave,
+        meuNome: meuNome,
       ));
       _ligarPonto();
       _sessaoPronta = true;
@@ -172,6 +173,7 @@ class _MesaAbaState extends State<MesaAba> {
         nome: mesa.nome,
         papel: papel,
         chave: chave,
+        meuNome: meuNome,
       ));
       _ligarPonto();
       _sessaoPronta = true;
@@ -184,7 +186,13 @@ class _MesaAbaState extends State<MesaAba> {
   Future<void> _voltarPara(MesaConhecida m) async {
     await _comEspera(() async {
       final uid = await _servico.entrarAnonimo();
-      final mesa = await _servico.entrarPorId(m.mesaId, m.nome);
+      // `m.nome` é o nome da MESA, não o da pessoa — usar `m.nome` aqui
+      // renomearia quem volta para o nome da mesa. `meuNome` é o nome que a
+      // pessoa usa aqui; se a mesa foi lembrada antes desse campo existir,
+      // cai num padrão pelo papel guardado.
+      final meuNome = m.meuNome ??
+          (m.papel == PapelMesa.mestre ? 'Mestre' : 'Jogador');
+      final mesa = await _servico.entrarPorId(m.mesaId, meuNome);
       await MesaStore.entrar(EstadoMesa(
         mesaId: mesa.id,
         nome: mesa.nome,
@@ -227,9 +235,13 @@ class _MesaAbaState extends State<MesaAba> {
     final dados = await pedirChaveDeMesa(context);
     if (dados == null) return;
     final (codigo, chave) = dados;
+    // pedirChaveDeMesa não pede nome (só código e chave): quem reassume vira
+    // mestre de uma mesa que talvez nunca tenha visto por dentro, então não
+    // há "meu nome" prévio para reaproveitar
+    const meuNome = 'Mestre';
     await _comEspera(() async {
       final uid = await _servico.entrarAnonimo();
-      final mesa = await _servico.reassumirMesa(codigo, chave, 'Mestre');
+      final mesa = await _servico.reassumirMesa(codigo, chave, meuNome);
       await MesaStore.entrar(EstadoMesa(
         mesaId: mesa.id,
         nome: mesa.nome,
@@ -242,6 +254,7 @@ class _MesaAbaState extends State<MesaAba> {
         nome: mesa.nome,
         papel: PapelMesa.mestre,
         chave: chave,
+        meuNome: meuNome,
       ));
       _ligarPonto();
       _sessaoPronta = true;

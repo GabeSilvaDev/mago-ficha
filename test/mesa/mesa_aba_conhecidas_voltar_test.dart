@@ -33,12 +33,15 @@ void main() {
     final (mesa, chave) = await mestre.criarMesa('Sombras', 'Gabriel');
     mesaId = mesa.id;
 
-    // já esteve nesta mesa, mas não está dentro dela agora
+    // já esteve nesta mesa, mas não está dentro dela agora. `meuNome` é o
+    // nome que a pessoa usa NESTA mesa — de propósito diferente do nome da
+    // mesa ('Sombras'), para o teste abaixo não passar por acidente.
     await MesaStore.lembrar(MesaConhecida(
         mesaId: mesaId,
         nome: 'Sombras',
         papel: PapelMesa.mestre,
-        chave: chave));
+        chave: chave,
+        meuNome: 'Gabriel'));
   });
 
   testWidgets('tocar na mesa conhecida volta para dentro dela', (t) async {
@@ -63,5 +66,11 @@ void main() {
     expect(find.text('mestre'), findsOneWidget);
     expect(MesaStore.atual, isNotNull);
     expect(MesaStore.atual!.papel, PapelMesa.mestre);
+
+    // "quem está na mesa" mostra o nome que a pessoa usa aqui
+    // (MesaConhecida.meuNome), não o nome da mesa — achado da revisão:
+    // _voltarPara mandava `m.nome` (o da MESA) como se fosse o da pessoa, e
+    // quem voltava pela lista aparecia renomeado com o nome da própria mesa
+    expect(find.text('Gabriel'), findsOneWidget);
   });
 }

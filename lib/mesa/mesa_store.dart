@@ -68,11 +68,19 @@ class MesaConhecida {
   /// justamente o que se perde ao limpar os dados do app.
   final String? chave;
 
+  /// O nome que a pessoa usa NESTA mesa — não o nome da mesa. Sem ele, voltar
+  /// pela lista (`_voltarPara`) não tem de onde tirar o nome de exibição e
+  /// acaba mandando o nome da mesa como se fosse o da pessoa: quem volta
+  /// aparece em "quem está na mesa" chamado, por exemplo, "Sombras de SP" em
+  /// vez do próprio nome.
+  final String? meuNome;
+
   const MesaConhecida({
     required this.mesaId,
     required this.nome,
     required this.papel,
     this.chave,
+    this.meuNome,
   });
 
   factory MesaConhecida.fromJson(Map<String, dynamic> j) => MesaConhecida(
@@ -80,6 +88,7 @@ class MesaConhecida {
         nome: (j['nome'] ?? '') as String,
         papel: j['papel'] == 'mestre' ? PapelMesa.mestre : PapelMesa.jogador,
         chave: j['chave'] as String?,
+        meuNome: j['meuNome'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -87,6 +96,7 @@ class MesaConhecida {
         'nome': nome,
         'papel': papel.name,
         if (chave != null) 'chave': chave,
+        if (meuNome != null) 'meuNome': meuNome,
       };
 }
 
