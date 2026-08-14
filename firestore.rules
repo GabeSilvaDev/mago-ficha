@@ -32,13 +32,17 @@ service cloud.firestore {
         pedido.chave == guardada.chave;
     }
 
-    // Resolver código -> mesa. Qualquer logado lê, porque quem vai entrar
-    // ainda não é membro. É por isso que esta coleção existe separada: se a
-    // busca fosse uma query em `mesas`, daria para varrer todas as mesas.
-    // Só o mestre da mesa apontada cria e apaga — por isso a mesa é criada
-    // primeiro e o código depois.
+    // Resolver código -> mesa. Qualquer logado busca UM código que já sabe de
+    // cor (`get`), porque quem vai entrar ainda não é membro. `list` fica
+    // negado de propósito: é o que impede varrer a coleção inteira e sair
+    // com todos os pares código->mesaId do projeto — sem isso, um anônimo
+    // qualquer entraria em toda mesa como jogador só de listar `codigos`. O
+    // cliente nunca precisa de `list` aqui: só faz `.doc(x).get()`, `.set` e
+    // `.delete`. Só o mestre da mesa apontada cria e apaga — por isso a mesa
+    // é criada primeiro e o código depois.
     match /codigos/{codigo} {
-      allow read: if logado();
+      allow get: if logado();
+      allow list: if false;
       allow create: if logado() &&
         get(/databases/$(db)/documents/mesas/$(request.resource.data.mesaId))
           .data.mestreUid == uid();
