@@ -113,12 +113,29 @@ void main() {
     expect(() => jogador.trocarCodigo(mesa.id), throwsA(isA<SemPermissao>()));
   });
 
-  test('apagar mesa: quem observa recebe null', () async {
+  // Achado da revisão final: `observarMesa` agora recusa quem não é membro
+  // nem mestre (espelhando `souMembro(id) || souMestre(id)` das regras). Uma
+  // assinatura NOVA feita depois de apagar a mesa seria recusada — é
+  // exatamente esse `permission-denied` num listener novo, contra um `null`
+  // de verdade num listener que já existia, que escondia o bloqueador da
+  // Fase 4 (`observarMesa` "morrendo" quando o registro de membro some).
+  // Por isso a assinatura aqui é feita ANTES de apagar: só assim o teste
+  // reproduz o que um listener já aberto recebe de verdade.
+  test('apagar mesa: quem já observava recebe null', () async {
     final (mestre, mesa) = await mesaPronta();
 
+    final espera =
+        expectLater(mestre.observarMesa(mesa.id), emitsThrough(isNull));
     await mestre.apagarMesa(mesa.id);
+    await espera;
 
-    expect(await mestre.observarMesa(mesa.id).first, isNull);
+    // uma tentativa nova de observar, feita depois da mesa já ter sumido,
+    // não acha mais nem membro nem mestre — e é recusada. O erro chega PELO
+    // stream (como a produção faz: `MesaFirestore` nunca lança síncrono),
+    // não como uma exceção síncrona na chamada — senão `_naMesa` quebraria
+    // ao reconstruir `_membros`/`MuralDaMesa`/`GaleriaMesa` no exato rebuild
+    // em que a mesa some.
+    expect(mestre.observarMesa(mesa.id), emitsError(isA<SemPermissao>()));
   });
 
   test('só o mestre apaga', () async {
@@ -178,7 +195,11 @@ void main() {
 
     await mestre.apagarMesa(mesa.id);
 
-    expect(await mestre.observarMesa(mesa.id).first, isNull);
+    // checagem direta no mundo, não via `observarMesa`: depois de apagada,
+    // uma assinatura NOVA é recusada por não achar mais membro nem mestre —
+    // ver o teste 'apagar mesa: quem já observava recebe null' para a
+    // cobertura de quem já estava ouvindo antes.
+    expect(mestre.mundo.mesas[mesa.id], isNull);
     expect(mestre.mundo.galeria[mesa.id], isNull);
   });
 

@@ -107,6 +107,37 @@ class MesaFake implements MesaService {
     if (_exigeMesa(mesaId).mestreUid != _uid) throw SemPermissao();
   }
 
+  // Espelha `souMembro(id) || souMestre(id)` das regras: quem não é membro
+  // nem mestre não lê mesa, membros, galeria, imagens nem mural
+  // (firestore.rules:56,68,74,122). Sem isto o fake ficava mais permissivo
+  // que a produção — foi essa folga que escondeu o bloqueador de
+  // `observarMesa` morrer com `permission-denied` quando o registro de
+  // membro some antes do documento da mesa.
+  void _exigeMembroOuMestre(String mesaId) {
+    final souMembro = mundo.membros[mesaId]?[_uid] != null;
+    final souMestre = mundo.mesas[mesaId]?.mestreUid == _uid;
+    if (!souMembro && !souMestre) throw SemPermissao();
+  }
+
+  // `observarMesa`/`observarMembros`/`observarMural`/`observarGaleria`
+  // devolvem um `Stream`, sem `async` — um `throw` direto nelas escapa
+  // SÍNCRONO para quem chama, no meio de um `build()`. O Firestore de
+  // verdade nunca faz isso: `MesaFirestore` sempre devolve um `Stream`
+  // válido, e a recusa chega depois, como erro DO stream. `_naMesa`
+  // reconstrói os `StreamBuilder`s aninhados (`_membros`, `MuralDaMesa`,
+  // `GaleriaMesa`) exatamente no rebuild em que a mesa some — se a recusa
+  // fosse síncrona aqui, esse rebuild quebraria a tela no meio do bloqueador
+  // que este arquivo existe para simular. `Stream.error` mantém o mesmo
+  // `SemPermissao`, só que do jeito que a produção realmente entrega.
+  Stream<T> _streamProtegido<T>(String mesaId, Stream<T> Function() abrir) {
+    try {
+      _exigeMembroOuMestre(mesaId);
+    } catch (e) {
+      return Stream<T>.error(e);
+    }
+    return abrir();
+  }
+
   @override
   Future<(Mesa, String)> criarMesa(String nome, String meuNome) async {
     _exigeLogin();
@@ -208,13 +239,13 @@ class MesaFake implements MesaService {
   @override
   Stream<Mesa?> observarMesa(String mesaId) {
     _exigeLogin();
-    return mundo.streamMesa(mesaId);
+    return _streamProtegido(mesaId, () => mundo.streamMesa(mesaId));
   }
 
   @override
   Stream<List<Membro>> observarMembros(String mesaId) {
     _exigeLogin();
-    return mundo.streamMembros(mesaId);
+    return _streamProtegido(mesaId, () => mundo.streamMembros(mesaId));
   }
 
   @override
@@ -409,17 +440,25 @@ class MesaFake implements MesaService {
   }
 
   @override
-  Stream<List<ItemGaleria>> observarGaleria(String mesaId) =>
-      mundo.streamGaleria(mesaId).map((_) {
-        final itens = mundo.galeria[mesaId]?.values.toList() ??
-            const <ItemGaleria>[];
-        final ordenados = [...itens]..sort((a, b) => b.em.compareTo(a.em));
-        return ordenados;
-      });
+  Stream<List<ItemGaleria>> observarGaleria(String mesaId) {
+    _exigeLogin();
+    return _streamProtegido(
+        mesaId,
+        () => mundo.streamGaleria(mesaId).map((_) {
+              final itens = mundo.galeria[mesaId]?.values.toList() ??
+                  const <ItemGaleria>[];
+              final ordenados = [...itens]
+                ..sort((a, b) => b.em.compareTo(a.em));
+              return ordenados;
+            }));
+  }
 
   @override
-  Future<String?> imagemCheia(String mesaId, String imagemId) async =>
-      mundo.cheias[mesaId]?[imagemId];
+  Future<String?> imagemCheia(String mesaId, String imagemId) async {
+    _exigeLogin();
+    _exigeMembroOuMestre(mesaId);
+    return mundo.cheias[mesaId]?[imagemId];
+  }
 
   @override
   Future<void> mostrarAgora(String mesaId, String imagemId) async {
@@ -444,6 +483,6 @@ class MesaFake implements MesaService {
   @override
   Stream<ItemMural?> observarMural(String mesaId) {
     _exigeLogin();
-    return mundo.streamMural(mesaId);
+    return _streamProtegido(mesaId, () => mundo.streamMural(mesaId));
   }
 }
