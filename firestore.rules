@@ -60,24 +60,30 @@ service cloud.firestore {
       allow update: if souMestre(mesaId) || reassumindo(mesaId);
       allow delete: if souMestre(mesaId);
 
-      // A galeria da crônica: todo membro vê, só o mestre mexe.
+      // A galeria da crônica: todo membro vê, só o mestre mexe. `souMestre`
+      // entra pelo mesmo motivo do `allow read` da mesa: `encerrarSessao`
+      // preserva a galeria de propósito, e o mestre que reabre a mesa
+      // encerrada precisa continuar enxergando o que ele preservou.
       match /galeria/{imagemId} {
-        allow read:  if souMembro(mesaId);
+        allow read:  if souMembro(mesaId) || souMestre(mesaId);
         allow write: if souMestre(mesaId);
       }
 
-      // A imagem cheia, buscada só quando alguém abre.
+      // A imagem cheia, buscada só quando alguém abre. Mesmo motivo acima.
       match /imagens/{imagemId} {
-        allow read:  if souMembro(mesaId);
+        allow read:  if souMembro(mesaId) || souMestre(mesaId);
         allow write: if souMestre(mesaId);
       }
 
       // Ninguém lê estes dois: só as regras, com get(). É o que permite
-      // guardar a chave sem entregá-la a quem entra na mesa.
+      // guardar a chave sem entregá-la a quem entra na mesa. O mestre
+      // precisa poder apagar os dois ao apagar a mesa — sem isso ficariam
+      // órfãos para sempre, já que ninguém mais alcança o próprio id.
       match /privado/chave {
         allow read: if false;
         allow create: if souMestre(mesaId);
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if souMestre(mesaId);
       }
       match /privado/pedido {
         allow read: if false;
@@ -109,9 +115,11 @@ service cloud.firestore {
         allow delete: if souMestre(mesaId);
       }
 
-      // Fase 3. Mural de imagens: todos leem, só o mestre escreve.
+      // Fase 3. Mural de imagens: todos leem, só o mestre escreve. Mesmo
+      // motivo do `allow read` da mesa e da galeria: o mestre precisa
+      // continuar lendo depois de `encerrarSessao`, quando já não é membro.
       match /mural/{doc} {
-        allow read:  if souMembro(mesaId);
+        allow read:  if souMembro(mesaId) || souMestre(mesaId);
         allow write: if souMestre(mesaId);
       }
     }

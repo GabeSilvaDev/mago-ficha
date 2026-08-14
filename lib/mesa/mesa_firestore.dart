@@ -357,12 +357,19 @@ class MesaFirestore implements MesaService {
     if (!doc.exists) return;
     final codigo = doc.data()!['codigo'] as String;
     try {
-      for (final c in ['galeria', 'imagens', 'fichas', 'membros', 'privado']) {
+      for (final c in ['galeria', 'imagens', 'fichas', 'membros']) {
         final docs = await _mesa(mesaId).collection(c).get();
         for (final d in docs.docs) {
           await d.reference.delete();
         }
       }
+      // `privado` não entra no laço acima: as regras não dão `list` nessa
+      // coleção (só `get` documento a documento, e `chave`/`pedido` são
+      // ilegíveis de propósito), então um `.get()` de coleção levaria
+      // permission-denied. Os dois ids são fixos e conhecidos, então
+      // apagamos cada um diretamente.
+      await _mesa(mesaId).collection('privado').doc('chave').delete();
+      await _mesa(mesaId).collection('privado').doc('pedido').delete();
       await _mural(mesaId).delete();
       await _db.collection('codigos').doc(codigo).delete();
       await _mesa(mesaId).delete();
