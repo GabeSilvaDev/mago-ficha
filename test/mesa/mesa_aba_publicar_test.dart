@@ -61,11 +61,14 @@ void main() {
     await t.pump();
     await t.pump(const Duration(milliseconds: 400));
 
+    // o mural e a galeria entraram antes do cartão da ficha: o botão desceu
+    // na lista, para além do que o sliver constrói sem rolar de verdade —
+    // por isso o drag vem antes de qualquer busca por ele
+    await t.drag(find.byType(ListView), const Offset(0, -2000));
+    await t.pump();
+
     expect(find.text('Publicar uma ficha'), findsOneWidget);
 
-    // o mural entrou antes do cartão da ficha: o botão desceu na lista
-    await t.ensureVisible(find.text('Publicar uma ficha'));
-    await t.pump();
     await t.tap(find.text('Publicar uma ficha'));
     await t.pump();
     await t.tap(find.text('Cassandra Vex').last);

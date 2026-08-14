@@ -14,6 +14,7 @@ import '../mesa_service.dart';
 import '../mesa_store.dart';
 import '../modelos.dart';
 import 'entrar_mesa_dialogo.dart';
+import 'galeria_mesa.dart';
 import 'mural_da_mesa.dart';
 import 'painel_mestre.dart';
 
@@ -120,19 +121,30 @@ class _MesaAbaState extends State<MesaAba> {
     final dados = await pedirDadosDaMesa(context);
     if (dados == null) return;
     final (nomeMesa, meuNome) = dados;
+    String? chaveCriada;
     await _comEspera(() async {
       final uid = await _servico.entrarAnonimo();
-      // a chave é mostrada ao mestre pela Task 9; aqui só criamos a mesa
-      final (mesa, _) = await _servico.criarMesa(nomeMesa, meuNome);
+      final (mesa, chave) = await _servico.criarMesa(nomeMesa, meuNome);
+      chaveCriada = chave;
       await MesaStore.entrar(EstadoMesa(
         mesaId: mesa.id,
         nome: mesa.nome,
         uid: uid,
         papel: PapelMesa.mestre,
+        chave: chave,
+      ));
+      await MesaStore.lembrar(MesaConhecida(
+        mesaId: mesa.id,
+        nome: mesa.nome,
+        papel: PapelMesa.mestre,
+        chave: chave,
       ));
       _ligarPonto();
       _sessaoPronta = true;
     });
+    // só depois da mesa entrar de vez: a chave é mostrada uma vez, e não pode
+    // ficar presa atrás de um erro no meio da criação
+    if (chaveCriada != null && mounted) await _mostrarChave(chaveCriada!);
   }
 
   Future<void> _entrar() async {
@@ -142,15 +154,152 @@ class _MesaAbaState extends State<MesaAba> {
     await _comEspera(() async {
       final uid = await _servico.entrarAnonimo();
       final mesa = await _servico.entrarPorCodigo(codigo, meuNome);
+      final papel =
+          mesa.mestreUid == uid ? PapelMesa.mestre : PapelMesa.jogador;
+      // entrar por código não devolve a chave; se este aparelho já foi mestre
+      // desta mesa antes, a chave que ele já guardava continua valendo
+      final chave =
+          papel == PapelMesa.mestre ? MesaStore.chaveDe(mesa.id) : null;
+      await MesaStore.entrar(EstadoMesa(
+        mesaId: mesa.id,
+        nome: mesa.nome,
+        uid: uid,
+        papel: papel,
+        chave: chave,
+      ));
+      await MesaStore.lembrar(MesaConhecida(
+        mesaId: mesa.id,
+        nome: mesa.nome,
+        papel: papel,
+        chave: chave,
+      ));
+      _ligarPonto();
+      _sessaoPronta = true;
+    });
+  }
+
+  /// Voltar sem código: o registro de membro vem antes de ler a mesa, porque
+  /// depois de encerrada a sessão ninguém é membro — e a regra só libera a
+  /// leitura para quem já é.
+  Future<void> _voltarPara(MesaConhecida m) async {
+    await _comEspera(() async {
+      final uid = await _servico.entrarAnonimo();
+      final mesa = await _servico.entrarPorId(m.mesaId, m.nome);
       await MesaStore.entrar(EstadoMesa(
         mesaId: mesa.id,
         nome: mesa.nome,
         uid: uid,
         papel: mesa.mestreUid == uid ? PapelMesa.mestre : PapelMesa.jogador,
+        chave: m.chave,
       ));
       _ligarPonto();
       _sessaoPronta = true;
     });
+  }
+
+  Future<void> _esquecer(MesaConhecida m) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Cores.pergaminho,
+        title: const Text('Esquecer esta mesa?'),
+        content: Text('O aparelho para de lembrar "${m.nome}". Para voltar, '
+            'alguém precisa te passar o código de novo.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Esquecer',
+                  style: TextStyle(color: Cores.indigo))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await MesaStore.esquecer(m.mesaId);
+    if (mounted) setState(() {});
+  }
+
+  /// A chave prova que fui mestre desta mesa: com ela dá para reassumi-la
+  /// noutro aparelho, mesmo sem ser mais membro.
+  Future<void> _reassumir() async {
+    final dados = await pedirChaveDeMesa(context);
+    if (dados == null) return;
+    final (codigo, chave) = dados;
+    await _comEspera(() async {
+      final uid = await _servico.entrarAnonimo();
+      final mesa = await _servico.reassumirMesa(codigo, chave, 'Mestre');
+      await MesaStore.entrar(EstadoMesa(
+        mesaId: mesa.id,
+        nome: mesa.nome,
+        uid: uid,
+        papel: PapelMesa.mestre,
+        chave: chave,
+      ));
+      await MesaStore.lembrar(MesaConhecida(
+        mesaId: mesa.id,
+        nome: mesa.nome,
+        papel: PapelMesa.mestre,
+        chave: chave,
+      ));
+      _ligarPonto();
+      _sessaoPronta = true;
+    });
+  }
+
+  /// Intransponível: a chave só é mostrada esta vez, e ela não pode ficar
+  /// presa atrás de um toque sem querer no fundo da tela.
+  Future<void> _mostrarChave(String chave) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Cores.pergaminho,
+        title: const Text('Guarde a chave da mesa'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Guarde esta chave. É com ela que você recupera a mesa se '
+              'trocar de celular ou limpar os dados do app. Quem tem a '
+              'chave manda na mesa.',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    chave,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Copiar chave',
+                  icon: const Icon(Icons.copy, size: 18),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: chave));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Chave copiada.')));
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Já guardei',
+                style: TextStyle(color: Cores.indigo)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sair(String mesaId) async {
@@ -173,24 +322,79 @@ class _MesaAbaState extends State<MesaAba> {
         .showSnackBar(SnackBar(content: Text(motivo)));
   }
 
-  Future<void> _fechar(String mesaId) async {
+  /// Só esvazia: a mesa, o código e a galeria continuam de pé para o mestre
+  /// reencontrar a mesma crônica no sábado seguinte.
+  Future<void> _encerrarSessao(String mesaId) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Cores.pergaminho,
-        title: const Text('Fechar a mesa?'),
+        title: const Text('Encerrar sessão?'),
         content: const Text(
-            'A mesa some para todo mundo e as fichas voltam a ser offline. '
-            'Isso não pode ser desfeito.'),
+            'Todo mundo sai da mesa. A mesa, o código e a galeria continuam.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Cancelar')),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Fechar',
+              child: const Text('Encerrar',
                   style: TextStyle(color: Cores.indigo))),
         ],
+      ),
+    );
+    if (ok != true) return;
+    await _comEspera(() async {
+      await _servico.encerrarSessao(mesaId);
+      _desligarPonto();
+      _desligarEspelho();
+      await MesaStore.limpar();
+    });
+  }
+
+  /// Irreversível e leva a galeria junto — por isso a confirmação exige
+  /// digitar o nome da mesa, não só um toque em "Apagar".
+  Future<void> _apagarMesa(String mesaId, String nomeMesa) async {
+    final controlador = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final bate = controlador.text == nomeMesa;
+          return AlertDialog(
+            backgroundColor: Cores.pergaminho,
+            title: const Text('Apagar mesa?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'A mesa, o código e a galeria inteira somem para sempre. '
+                  'Isso não pode ser desfeito.',
+                ),
+                const SizedBox(height: 12),
+                Text('Digite "$nomeMesa" para confirmar:',
+                    style: const TextStyle(fontStyle: FontStyle.italic)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controlador,
+                  autofocus: true,
+                  onChanged: (_) => setLocal(() {}),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancelar')),
+              TextButton(
+                onPressed: bate ? () => Navigator.pop(ctx, true) : null,
+                child: const Text('Apagar mesa',
+                    style: TextStyle(color: Cores.indigo)),
+              ),
+            ],
+          );
+        },
       ),
     );
     if (ok != true) return;
@@ -199,6 +403,8 @@ class _MesaAbaState extends State<MesaAba> {
       _desligarPonto();
       _desligarEspelho();
       await MesaStore.limpar();
+      // a mesa não existe mais em lugar nenhum: nada a lembrar
+      await MesaStore.esquecer(mesaId);
     });
   }
 
@@ -315,6 +521,7 @@ class _MesaAbaState extends State<MesaAba> {
   }
 
   Widget _semMesa() {
+    final conhecidas = MesaStore.conhecidas();
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -330,6 +537,10 @@ class _MesaAbaState extends State<MesaAba> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            // mesas em que este aparelho já entrou: voltar sem pedir código
+            // de novo, jogamos toda semana e ninguém quer ditar o código
+            for (final m in conhecidas) _mesaConhecida(m),
+            if (conhecidas.isNotEmpty) const SizedBox(height: 10),
             if (_ocupado)
               const CircularProgressIndicator()
             else ...[
@@ -347,8 +558,31 @@ class _MesaAbaState extends State<MesaAba> {
                     foregroundColor: Cores.indigo,
                     side: const BorderSide(color: Cores.indigo)),
               ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: _reassumir,
+                child: const Text('Já sou o mestre desta mesa'),
+              ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mesaConhecida(MesaConhecida m) {
+    return Card(
+      child: ListTile(
+        title: Text(m.nome.isEmpty ? 'Sem nome' : m.nome,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Cores.indigo)),
+        subtitle:
+            Text(m.papel == PapelMesa.mestre ? 'mestre' : 'jogador'),
+        onTap: () => _voltarPara(m),
+        trailing: IconButton(
+          tooltip: 'Esquecer esta mesa',
+          icon: const Icon(Icons.close, color: Cores.indigoClaro),
+          onPressed: () => _esquecer(m),
         ),
       ),
     );
@@ -359,10 +593,22 @@ class _MesaAbaState extends State<MesaAba> {
     return StreamBuilder<Mesa?>(
       stream: _servico.observarMesa(estado.mesaId),
       builder: (context, snap) {
-        if (snap.hasData && snap.data == null) {
-          // a mesa sumiu enquanto estávamos nela
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _voltarParaOffline('O mestre encerrou a mesa.');
+        // `hasData` não serve aqui: ela só olha se `data != null`, e um null
+        // de verdade (a mesa sumiu) sempre bate com isso — travaria
+        // `hasData` em false para sempre. O que importa é já termos recebido
+        // alguma coisa (não estar mais esperando a primeira emissão).
+        if (snap.connectionState == ConnectionState.active &&
+            snap.data == null) {
+          // a mesa sumiu enquanto estávamos nela: se este aparelho ainda a
+          // conhece, a mesa continua existindo e só a sessão foi encerrada;
+          // se não conhece mais, ela foi apagada de verdade
+          final aindaConhecida =
+              MesaStore.conhecidas().any((m) => m.mesaId == estado.mesaId);
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!aindaConhecida) await MesaStore.esquecer(estado.mesaId);
+            _voltarParaOffline(aindaConhecida
+                ? 'A sessão foi encerrada.'
+                : 'Esta mesa foi apagada.');
           });
         }
         final mesa = snap.data;
@@ -375,11 +621,42 @@ class _MesaAbaState extends State<MesaAba> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(mesa?.nome ?? estado.nome,
-                        style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Cores.indigo)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(mesa?.nome ?? estado.nome,
+                              style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Cores.indigo)),
+                        ),
+                        if (souMestre && mesa != null)
+                          PopupMenuButton<String>(
+                            tooltip: 'Mais opções',
+                            icon: const Icon(Icons.more_vert,
+                                color: Cores.indigoClaro),
+                            color: Cores.pergaminho,
+                            onSelected: (v) {
+                              if (v == 'apagar') {
+                                _apagarMesa(mesa.id, mesa.nome);
+                              }
+                            },
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                value: 'apagar',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_forever_outlined,
+                                        color: Cores.indigo),
+                                    SizedBox(width: 8),
+                                    Text('Apagar mesa'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -430,6 +707,13 @@ class _MesaAbaState extends State<MesaAba> {
                 servico: _servico,
                 mesaId: estado.mesaId,
                 souMestre: souMestre),
+            // o acervo mora logo abaixo do que está em destaque agora, e é
+            // de todos: quem não é mestre só não mexe nele
+            const FaixaSecao('Galeria da mesa'),
+            GaleriaMesa(
+                servico: _servico,
+                mesaId: estado.mesaId,
+                souMestre: souMestre),
             if (souMestre)
               PainelMestre(servico: _servico, mesaId: estado.mesaId),
             const FaixaSecao('Minha ficha nesta mesa'),
@@ -448,9 +732,9 @@ class _MesaAbaState extends State<MesaAba> {
                   ),
                   if (souMestre)
                     TextButton.icon(
-                      onPressed: () => _fechar(estado.mesaId),
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      label: const Text('Fechar mesa'),
+                      onPressed: () => _encerrarSessao(estado.mesaId),
+                      icon: const Icon(Icons.stop_circle_outlined, size: 18),
+                      label: const Text('Encerrar sessão'),
                     ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme.dart';
+import '../chave_mesa.dart';
 import '../codigo.dart';
 
 /// Pergunta o nome da mesa e o seu nome. Devolve (nomeDaMesa, meuNome).
@@ -105,6 +106,69 @@ Future<(String, String)?> pedirCodigo(BuildContext context) {
               ));
             },
             child: const Text('Entrar', style: TextStyle(color: Cores.indigo)),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Pergunta o código e a chave de recuperação, para quem já foi mestre desta
+/// mesa recuperá-la noutro aparelho. Devolve (codigo, chave).
+Future<(String, String)?> pedirChaveDeMesa(BuildContext context) {
+  final codigo = TextEditingController();
+  final chave = TextEditingController();
+  String? erro;
+
+  return showDialog<(String, String)>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setLocal) => AlertDialog(
+        backgroundColor: Cores.pergaminho,
+        title: const Text('Reassumir mesa'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: codigo,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: 'Código da mesa',
+                hintText: 'MAGO-XXXX',
+                errorText: erro,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: chave,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Chave de recuperação',
+                hintText: 'MAGO-XXXX-XXXX',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              final c = CodigoMesa.normalizar(codigo.text);
+              if (!CodigoMesa.valido(c)) {
+                setLocal(() => erro = 'Código inválido.');
+                return;
+              }
+              if (!ChaveMesa.valida(chave.text)) {
+                setLocal(() => erro = 'Chave inválida.');
+                return;
+              }
+              Navigator.pop(ctx, (c, ChaveMesa.normalizar(chave.text)));
+            },
+            child: const Text('Reassumir',
+                style: TextStyle(color: Cores.indigo)),
           ),
         ],
       ),

@@ -22,10 +22,15 @@ void main() {
     await t.pump(const Duration(milliseconds: 400));
   }
 
-  /// Toque que grava no Hive. `runAsync` devolve uma volta ao loop de verdade:
-  /// sem isso a gravação fica pendente e a tela não sai do "carregando".
+  /// Toque que grava no Hive — criar e entrar gravam o estado atual e a mesa
+  /// conhecida, duas escritas em sequência. `runAsync` devolve uma volta ao
+  /// loop de verdade: sem isso a gravação fica pendente e a tela não sai do
+  /// "carregando"; uma só rodada não é suficiente para as duas escritas.
   Future<void> tocarGravando(WidgetTester t, Finder alvo) async {
     await t.tap(alvo);
+    await t.pump();
+    await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)));
     await t.pump();
     await t.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 150)));
@@ -81,15 +86,24 @@ void main() {
     await t.enterText(find.byType(TextField).first, 'Sombras de SP');
     await tocarGravando(t, find.widgetWithText(TextButton, 'Criar'));
 
+    // a chave de recuperação aparece uma vez, intransponível: precisa fechar
+    // antes de ver a mesa por trás dela
+    expect(find.text('Já guardei'), findsOneWidget);
+    await t.tap(find.text('Já guardei'));
+    await assentar(t);
+
     expect(find.text('Sombras de SP'), findsOneWidget);
     expect(find.textContaining('MAGO-'), findsOneWidget);
     expect(find.text('mestre'), findsOneWidget);
     expect(find.byTooltip('Trocar código'), findsOneWidget);
 
-    // a tela do mestre tem painel de fichas e cartão da ficha própria: os
-    // botões do rodapé ficam fora da viewport do teste
-    await t.drag(find.byType(ListView), const Offset(0, -400));
+    // a tela do mestre cresceu (mural, galeria, painel de fichas, cartão da
+    // ficha própria): o rodapé fica fora do que a lista constrói sem rolar —
+    // e sem rolar de verdade (drag), o sliver nem chega a construir o que
+    // está tão embaixo, então `ensureVisible` não encontra nada para levar
+    // à vista
+    await t.drag(find.byType(ListView), const Offset(0, -2000));
     await assentar(t);
-    expect(find.text('Fechar mesa'), findsOneWidget);
+    expect(find.text('Encerrar sessão'), findsOneWidget);
   });
 }

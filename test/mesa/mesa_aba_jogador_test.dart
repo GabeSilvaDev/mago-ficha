@@ -25,10 +25,15 @@ void main() {
     await t.pump(const Duration(milliseconds: 400));
   }
 
-  /// Toque que grava no Hive. `runAsync` devolve uma volta ao loop de verdade:
-  /// sem isso a gravação fica pendente e a tela não sai do "carregando".
+  /// Toque que grava no Hive — entrar grava o estado atual e a mesa
+  /// conhecida, duas escritas em sequência. `runAsync` devolve uma volta ao
+  /// loop de verdade: sem isso a gravação fica pendente e a tela não sai do
+  /// "carregando"; uma só rodada não é suficiente para as duas escritas.
   Future<void> tocarGravando(WidgetTester t, Finder alvo) async {
     await t.tap(alvo);
+    await t.pump();
+    await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)));
     await t.pump();
     await t.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 150)));
@@ -55,9 +60,10 @@ void main() {
 
     expect(find.text('Sombras'), findsOneWidget);
     expect(find.byTooltip('Trocar código'), findsNothing);
-    expect(find.text('Fechar mesa'), findsNothing);
-    // mural e cartão da ficha empurram o rodapé para fora da viewport
-    await t.drag(find.byType(ListView), const Offset(0, -400));
+    expect(find.text('Encerrar sessão'), findsNothing);
+    // mural, galeria e cartão da ficha empurram o rodapé para fora do que a
+    // lista constrói sem rolar de verdade
+    await t.drag(find.byType(ListView), const Offset(0, -2000));
     await assentar(t);
     expect(find.text('Sair da mesa'), findsOneWidget);
     // vê os dois membros, com os papéis certos

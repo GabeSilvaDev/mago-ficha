@@ -54,6 +54,11 @@ void main() {
 
     expect(t.takeException(), isNull);
     expect(find.text('Sombras'), findsOneWidget);
+
+    // mural e galeria empurram o cartão da ficha para além do que o sliver
+    // constrói sem rolar de verdade
+    await t.drag(find.byType(ListView), const Offset(0, -2000));
+    await t.pump();
     expect(find.text('Publicar uma ficha'), findsOneWidget);
   });
 }

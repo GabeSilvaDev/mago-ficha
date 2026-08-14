@@ -119,6 +119,13 @@ abstract class MesaService {
   /// Entrar de novo na mesma mesa é idempotente.
   Future<Mesa> entrarPorCodigo(String codigo, String meuNome);
 
+  /// Irmã de [entrarPorCodigo], sem a etapa de resolver o código: usada para
+  /// voltar a uma mesa já conhecida pelo aparelho. Grava o registro de membro
+  /// PRIMEIRO e só então lê a mesa — depois de `encerrarSessao` ninguém é
+  /// membro, e a regra de leitura só libera para quem já é. Lança
+  /// [MesaNaoEncontrada] se a mesa não existir (mestre apagou).
+  Future<Mesa> entrarPorId(String mesaId, String meuNome);
+
   /// Volta a ser o mestre de uma mesa provando a chave. Lança [ChaveErrada]
   /// se não bater, [MesaNaoEncontrada] se o código não existir.
   Future<Mesa> reassumirMesa(String codigo, String chave, String meuNome);

@@ -157,6 +157,27 @@ class MesaFake implements MesaService {
     return mesa;
   }
 
+  // Mesmo corpo de `entrarPorCodigo` a partir do registro de membro, sem a
+  // etapa de resolver o código: quem chama já sabe o mesaId (veio da lista de
+  // mesas conhecidas do aparelho).
+  @override
+  Future<Mesa> entrarPorId(String mesaId, String meuNome) async {
+    _exigeLogin();
+    final atual = mundo.membros[mesaId]?[_uid!];
+    (mundo.membros[mesaId] ??= {})[_uid!] = Membro(
+      uid: _uid!,
+      nome: meuNome,
+      // já era mestre? continua mestre
+      papel: atual?.papel ?? PapelMesa.jogador,
+      entrouEm: atual?.entrouEm ?? relogio(),
+      visto: relogio(),
+    );
+    mundo.notificar(mesaId);
+    final mesa = mundo.mesas[mesaId];
+    if (mesa == null) throw MesaNaoEncontrada();
+    return mesa;
+  }
+
   // Observar exige login como no Firestore de verdade, onde `instance` sem
   // `Firebase.initializeApp` estoura. Sem esta exigência o fake deixa passar
   // a tela que assina o stream antes de entrar.
