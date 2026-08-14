@@ -45,6 +45,56 @@ void main() {
     expect(find.text('Entrar com código'), findsOneWidget);
   });
 
+  group('apagar mesa: gate do nome', () {
+    // Além do que o setUp de fora já prepara (mesa criada e conhecida), este
+    // grupo entra na mesa: o gate do nome só aparece com a tela já dentro
+    // dela. `MesaStore.entrar` aqui é seguro porque `setUp` roda fora do
+    // fake-async — o mesmo motivo pelo qual o setUp de fora já grava.
+    setUp(() async {
+      await MesaStore.entrar(EstadoMesa(
+        mesaId: mesaId,
+        nome: 'Sombras',
+        uid: 'u-mestre',
+        papel: PapelMesa.mestre,
+      ));
+    });
+
+    testWidgets(
+        'só habilita quando o nome digitado bate exatamente com o da mesa',
+        (t) async {
+      await t.pumpWidget(
+          MaterialApp(home: Scaffold(body: MesaAba(servico: mestre))));
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 400));
+
+      await t.tap(find.byIcon(Icons.more_vert));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Apagar mesa'));
+      await t.pumpAndSettle();
+
+      await t.enterText(find.byType(TextField), 'nome errado');
+      await t.pump();
+      final desabilitado = t.widget<TextButton>(
+          find.widgetWithText(TextButton, 'Apagar mesa'));
+      expect(desabilitado.onPressed, isNull);
+
+      await t.enterText(find.byType(TextField), 'Sombras');
+      await t.pump();
+      final habilitado = t.widget<TextButton>(
+          find.widgetWithText(TextButton, 'Apagar mesa'));
+      expect(habilitado.onPressed, isNotNull);
+
+      // fecha o diálogo antes do teste terminar: deixá-lo aberto na volta
+      // atrapalha o descarte do widget (e o Timer de presença dele) entre
+      // testes
+      await t.tap(find.text('Cancelar'));
+      await t.pumpAndSettle();
+    });
+  });
+
+  // DAQUI PARA BAIXO: testes que gravam no Hive de dentro do fake-async (além
+  // do que os setUp já gravam fora dele). A escrita fica pendente e trava o
+  // setUp do teste seguinte, então ficam por último, sem ninguém depois.
   testWidgets('esquecer tira a mesa da lista', (t) async {
     await t.pumpWidget(
         MaterialApp(home: Scaffold(body: MesaAba(servico: mestre))));

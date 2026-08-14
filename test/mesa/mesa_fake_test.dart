@@ -155,6 +155,23 @@ void main() {
     expect(devolta.mestreUid, 'u-mestre');
   });
 
+  // `encerrarSessao` apaga o registro de membro do mestre junto com o dos
+  // jogadores. Ele voltar pela lista de mesas conhecidas (`entrarPorId`) não
+  // pode rebaixá-lo: o registro de membro não é a fonte da verdade sobre quem
+  // manda na mesa, o `mestreUid` dela é.
+  test('depois de encerrar, voltar por entrarPorId continua mestre',
+      () async {
+    final (mestre, mesa) = await mesaPronta();
+    await mestre.encerrarSessao(mesa.id);
+
+    final devolta = await mestre.entrarPorId(mesa.id, 'Gabriel');
+
+    expect(devolta.id, mesa.id);
+    final membros = await mestre.observarMembros(mesa.id).first;
+    expect(membros.single.uid, 'u-mestre');
+    expect(membros.single.papel, PapelMesa.mestre);
+  });
+
   test('apagar mesa leva tudo junto', () async {
     final (mestre, mesa) = await mesaPronta();
     await mestre.guardarNaGaleria(mesa.id, 'CHEIA', 'MINI', 'mapa');

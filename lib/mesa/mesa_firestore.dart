@@ -95,11 +95,14 @@ class MesaFirestore implements MesaService {
 
     try {
       final jaEra = await membros.get();
+      // Provisório: `codigos` só guarda o mesaId, não o mestreUid, e a mesa
+      // só é legível depois que este registro existir — então ainda não
+      // sabemos se este uid é o mestre dela.
+      final papelProvisorio = (jaEra.data()?['papel'] as String?) ?? 'jogador';
 
       await membros.set({
         'nome': meuNome,
-        // entrar de novo não rebaixa o mestre nem promove ninguém
-        'papel': (jaEra.data()?['papel'] as String?) ?? 'jogador',
+        'papel': papelProvisorio,
         'entrouEm':
             (jaEra.data()?['entrouEm'] as String?) ?? agora.toIso8601String(),
         'visto': agora.toIso8601String(),
@@ -109,7 +112,18 @@ class MesaFirestore implements MesaService {
       // que a regra sabe que somos da casa.
       final doc = await _mesa(mesaId).get();
       if (!doc.exists) throw MesaNaoEncontrada();
-      return Mesa.fromJson(mesaId, doc.data()!);
+      final mesa = Mesa.fromJson(mesaId, doc.data()!);
+
+      // O registro de membro não é a fonte da verdade sobre quem manda na
+      // mesa: `encerrarSessao` apaga todos os membros, mestre incluso, e um
+      // mestre reentrando não pode ser rebaixado a jogador só por não achar
+      // mais o próprio registro antigo. Quem manda é o `mestreUid` da mesa,
+      // lido agora — corrige o provisório se ele estiver errado.
+      final papelCerto = mesa.mestreUid == meuUid ? 'mestre' : 'jogador';
+      if (papelCerto != papelProvisorio) {
+        await membros.update({'papel': papelCerto});
+      }
+      return mesa;
     } on FirebaseException catch (e) {
       // O código apontava para uma mesa que não existe mais: sem a mesa, a
       // regra não tem como reconhecer ninguém.
@@ -129,11 +143,13 @@ class MesaFirestore implements MesaService {
 
     try {
       final jaEra = await membros.get();
+      // Provisório: a mesa só é legível depois que este registro existir,
+      // então ainda não sabemos se este uid é o mestre dela.
+      final papelProvisorio = (jaEra.data()?['papel'] as String?) ?? 'jogador';
 
       await membros.set({
         'nome': meuNome,
-        // entrar de novo não rebaixa o mestre nem promove ninguém
-        'papel': (jaEra.data()?['papel'] as String?) ?? 'jogador',
+        'papel': papelProvisorio,
         'entrouEm':
             (jaEra.data()?['entrouEm'] as String?) ?? agora.toIso8601String(),
         'visto': agora.toIso8601String(),
@@ -143,7 +159,18 @@ class MesaFirestore implements MesaService {
       // que a regra sabe que somos da casa.
       final doc = await _mesa(mesaId).get();
       if (!doc.exists) throw MesaNaoEncontrada();
-      return Mesa.fromJson(mesaId, doc.data()!);
+      final mesa = Mesa.fromJson(mesaId, doc.data()!);
+
+      // O registro de membro não é a fonte da verdade sobre quem manda na
+      // mesa: `encerrarSessao` apaga todos os membros, mestre incluso, e um
+      // mestre reentrando não pode ser rebaixado a jogador só por não achar
+      // mais o próprio registro antigo. Quem manda é o `mestreUid` da mesa,
+      // lido agora — corrige o provisório se ele estiver errado.
+      final papelCerto = mesa.mestreUid == meuUid ? 'mestre' : 'jogador';
+      if (papelCerto != papelProvisorio) {
+        await membros.update({'papel': papelCerto});
+      }
+      return mesa;
     } on FirebaseException catch (e) {
       // A mesa foi apagada: sem ela, a regra não tem como reconhecer ninguém.
       if (e.code == 'permission-denied') throw MesaNaoEncontrada();

@@ -145,11 +145,15 @@ class MesaFake implements MesaService {
     if (mesa == null) throw MesaNaoEncontrada();
 
     final atual = mundo.membros[mesa.id]?[_uid!];
+    // O registro de membro não é a fonte da verdade sobre quem manda na
+    // mesa: `encerrarSessao` apaga todos os membros, mestre incluso, e um
+    // mestre reentrando não pode ser rebaixado a jogador só por não achar
+    // mais o próprio registro antigo. Quem manda é o `mestreUid` da mesa, e
+    // aqui ele já é conhecido (a mesa já foi resolvida pelo código).
     (mundo.membros[mesa.id] ??= {})[_uid!] = Membro(
       uid: _uid!,
       nome: meuNome,
-      // já era mestre? continua mestre
-      papel: atual?.papel ?? PapelMesa.jogador,
+      papel: mesa.mestreUid == _uid ? PapelMesa.mestre : PapelMesa.jogador,
       entrouEm: atual?.entrouEm ?? relogio(),
       visto: relogio(),
     );
@@ -164,10 +168,12 @@ class MesaFake implements MesaService {
   Future<Mesa> entrarPorId(String mesaId, String meuNome) async {
     _exigeLogin();
     final atual = mundo.membros[mesaId]?[_uid!];
+    // Provisório: a mesa só existe para nós lermos (linha abaixo) depois que
+    // este registro de membro existir, então ainda não sabemos se este uid é
+    // o mestre dela.
     (mundo.membros[mesaId] ??= {})[_uid!] = Membro(
       uid: _uid!,
       nome: meuNome,
-      // já era mestre? continua mestre
       papel: atual?.papel ?? PapelMesa.jogador,
       entrouEm: atual?.entrouEm ?? relogio(),
       visto: relogio(),
@@ -175,6 +181,24 @@ class MesaFake implements MesaService {
     mundo.notificar(mesaId);
     final mesa = mundo.mesas[mesaId];
     if (mesa == null) throw MesaNaoEncontrada();
+
+    // Agora que a mesa foi lida, o papel de verdade é conhecido. O registro
+    // de membro nunca é a fonte da verdade sobre quem manda na mesa —
+    // `encerrarSessao` o apaga, mestre incluso — quem manda é o `mestreUid`
+    // da mesa, então corrigimos o provisório se ele estiver errado.
+    final papelCerto =
+        mesa.mestreUid == _uid ? PapelMesa.mestre : PapelMesa.jogador;
+    final membroAgora = mundo.membros[mesaId]![_uid]!;
+    if (membroAgora.papel != papelCerto) {
+      mundo.membros[mesaId]![_uid!] = Membro(
+        uid: _uid!,
+        nome: meuNome,
+        papel: papelCerto,
+        entrouEm: membroAgora.entrouEm,
+        visto: membroAgora.visto,
+      );
+      mundo.notificar(mesaId);
+    }
     return mesa;
   }
 
