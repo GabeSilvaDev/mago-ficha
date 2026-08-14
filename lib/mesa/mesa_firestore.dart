@@ -195,13 +195,22 @@ class MesaFirestore implements MesaService {
         'uid': meuUid,
       });
       await _mesa(mesaId).update({'mestreUid': meuUid});
-      // some com o pedido depois do sucesso: a chave em claro não fica
-      // parada no documento depois de já ter cumprido o papel dela — as
-      // regras já deixam o mestre apagar `privado/pedido`
-      await _mesa(mesaId).collection('privado').doc('pedido').delete();
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') throw ChaveErrada();
       rethrow;
+    }
+
+    // some com o pedido depois do sucesso: a chave em claro não fica parada
+    // no documento depois de já ter cumprido o papel dela — as regras já
+    // deixam o mestre apagar `privado/pedido`. FORA do try acima de
+    // propósito: nesse ponto a reassunção já deu certo (quem chama já É o
+    // mestre), então uma falha só nesta limpeza não pode virar "Chave não
+    // confere." para alguém que acabou de provar a chave certa.
+    try {
+      await _mesa(mesaId).collection('privado').doc('pedido').delete();
+    } catch (_) {
+      // best-effort: o documento órfão não vaza nada (ninguém tem `read` em
+      // `privado/*`), e `apagarMesa` o apaga de qualquer jeito mais tarde
     }
 
     await _mesa(mesaId).collection('membros').doc(meuUid).set({
