@@ -660,16 +660,20 @@ class _MesaAbaState extends State<MesaAba> {
     final nomeParaEntrar =
         meuNome ?? (estado.papel == PapelMesa.mestre ? 'Mestre' : 'Jogador');
     var apagada = false;
+    var sondaOk = false;
     try {
       await _servico.entrarPorId(estado.mesaId, nomeParaEntrar);
+      sondaOk = true;
     } on MesaNaoEncontrada {
       apagada = true;
     } catch (_) {
-      // rede fora (ou qualquer outro erro): trata como sessão encerrada
+      // rede fora (ou qualquer outro erro): trata como sessão encerrada,
+      // mas sem `sondaOk` — sem confirmação de que `entrarPorId` chegou a
+      // gravar o registro de membro, não há o que desfazer
     }
     if (apagada) {
       await MesaStore.esquecer(estado.mesaId);
-    } else {
+    } else if (sondaOk) {
       // a sonda acima só existe para descobrir se a mesa ainda está de pé,
       // mas `entrarPorId` grava o registro de membro ANTES de ler a mesa —
       // é a ordem que a regra de segurança exige, não dá para inverter.
