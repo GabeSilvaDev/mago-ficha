@@ -15,11 +15,16 @@ class VisualizadorImagens extends StatefulWidget {
   final Map<String, String> legendas;
   final int inicial;
 
+  /// Bytes que não vêm do `ImagemStore`. É o caso da imagem do mural: ela é
+  /// da mesa, e quem só vai olhar não precisa gravá-la no aparelho.
+  final Map<String, Uint8List>? bytesDiretos;
+
   const VisualizadorImagens({
     super.key,
     required this.imagens,
     this.legendas = const {},
     this.inicial = 0,
+    this.bytesDiretos,
   });
 
   @override
@@ -86,7 +91,9 @@ class _VisualizadorImagensState extends State<VisualizadorImagens> {
             itemCount: total,
             onPageChanged: (i) => setState(() => _atual = i),
             itemBuilder: (_, i) {
-              final bytes = ImagemStore.bytes(widget.imagens[i]);
+              final id = widget.imagens[i];
+              final bytes =
+                  widget.bytesDiretos?[id] ?? ImagemStore.bytes(id);
               if (bytes == null) {
                 return const Center(
                   child: Text('Imagem não encontrada.',

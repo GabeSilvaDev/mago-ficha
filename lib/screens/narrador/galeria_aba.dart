@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../mesa/fichas_da_mesa.dart';
+import '../../mesa/mesa_service.dart';
 import '../../models/campo_narrador.dart';
 import '../../models/ficha.dart';
 import '../../store/ficha_store.dart';
@@ -14,8 +16,13 @@ import 'galeria_ordem.dart';
 
 /// Galeria de personagens: cards com retrato e os campos que o narrador
 /// escolheu mostrar, com filtro por tipo e ordenação por característica.
+///
+/// Durante uma sessão, as fichas que os jogadores publicaram entram aqui
+/// junto com as locais — só para consulta. [servico] existe para o teste
+/// injetar o fake.
 class GaleriaAba extends StatefulWidget {
-  const GaleriaAba({super.key});
+  final MesaService? servico;
+  const GaleriaAba({super.key, this.servico});
 
   @override
   State<GaleriaAba> createState() => _GaleriaAbaState();
@@ -33,17 +40,28 @@ class _GaleriaAbaState extends State<GaleriaAba> {
     // a definição de campo pode ter sido apagada enquanto estava selecionada
     if (_ordem != null && !campos.any((c) => c.id == _ordem!.id)) _ordem = null;
 
-    return ValueListenableBuilder(
-      valueListenable: FichaStore.listenable,
-      builder: (context, Box<String> box, _) {
-        final lista = GaleriaOrdem.aplicar(
-          FichaStore.todas(),
-          tipo: _tipo,
-          ordenarPor: _ordem,
-          crescente: _crescente,
-          busca: _busca,
-        );
-        return Column(
+    return FichasDaMesa(
+      servico: widget.servico,
+      builder: (context, daMesa) => ValueListenableBuilder(
+        valueListenable: FichaStore.listenable,
+        builder: (context, Box<String> box, _) {
+          final juncao = juntarComAsLocais(daMesa);
+          final lista = GaleriaOrdem.aplicar(
+            juncao.todas,
+            tipo: _tipo,
+            ordenarPor: _ordem,
+            crescente: _crescente,
+            busca: _busca,
+          );
+          return _corpo(context, lista, campos, juncao.idsDaMesa);
+        },
+      ),
+    );
+  }
+
+  Widget _corpo(BuildContext context, List<Ficha> lista,
+      List<CampoNarrador> campos, Set<String> idsDaMesa) {
+    return Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -141,24 +159,26 @@ class _GaleriaAbaState extends State<GaleriaAba> {
                         mainAxisSpacing: 10,
                       ),
                       itemCount: lista.length,
-                      itemBuilder: (_, i) => _card(lista[i], campos),
+                      itemBuilder: (_, i) =>
+                          _card(lista[i], campos, idsDaMesa.contains(lista[i].id)),
                     ),
             ),
           ],
-        );
-      },
     );
   }
 
-  Widget _card(Ficha f, List<CampoNarrador> campos) {
+  Widget _card(Ficha f, List<CampoNarrador> campos, bool daMesa) {
     // no máximo três campos, senão o card vira tabela
     final mostrar = campos.take(3).toList();
     return Card(
       child: InkWell(
         onTap: () async {
-          // NPC é uma ficha normal: abre a mesma tela do personagem de jogador
+          // NPC é uma ficha normal: abre a mesma tela do personagem de jogador.
+          // A da mesa não está no Hive daqui e é do jogador: abre só leitura.
           await Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => FichaViewScreen(fichaId: f.id)));
+              builder: (_) => daMesa
+                  ? FichaViewScreen(fichaDireta: f, somenteLeitura: true)
+                  : FichaViewScreen(fichaId: f.id)));
           if (mounted) setState(() {});
         },
         child: Padding(
@@ -173,7 +193,13 @@ class _GaleriaAbaState extends State<GaleriaAba> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, color: Cores.indigo)),
-              if (f.ehNpc)
+              if (daMesa)
+                const Text('na mesa · só leitura',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Cores.indigoClaro,
+                        fontStyle: FontStyle.italic))
+              else if (f.ehNpc)
                 const Text('NPC',
                     style: TextStyle(fontSize: 11, color: Cores.indigoClaro)),
               const SizedBox(height: 4),

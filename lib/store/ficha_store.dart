@@ -35,9 +35,14 @@ class FichaStore {
     return Ficha(jsonDecode(s) as Map<String, dynamic>);
   }
 
+  /// Avisado ao fim de cada `salvar`. A mesa online usa isso para espelhar a
+  /// ficha publicada; fora de mesa é null e nada acontece.
+  static void Function(Ficha)? observador;
+
   static Future<void> salvar(Ficha f) async {
     f.data['atualizadoEm'] = DateTime.now().toIso8601String();
     await _box.put(f.id, jsonEncode(f.data));
+    observador?.call(f);
   }
 
   static Future<void> excluir(String id) async => _box.delete(id);

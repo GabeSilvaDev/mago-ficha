@@ -15,8 +15,21 @@ import 'wizard_screen.dart';
 /// interativos de jogo: Vitalidade, Força de Vontade, Quintessência,
 /// Paradoxo e Experiência — alterações salvam na hora.
 class FichaViewScreen extends StatefulWidget {
-  final String fichaId;
-  const FichaViewScreen({super.key, required this.fichaId});
+  final String? fichaId;
+
+  /// Ficha que não está no Hive deste aparelho — é o caso do mestre olhando a
+  /// ficha publicada por um jogador.
+  final Ficha? fichaDireta;
+
+  /// Tudo desabilitado: nada aqui grava nada.
+  final bool somenteLeitura;
+
+  const FichaViewScreen({
+    super.key,
+    this.fichaId,
+    this.fichaDireta,
+    this.somenteLeitura = false,
+  }) : assert(fichaId != null || fichaDireta != null);
 
   @override
   State<FichaViewScreen> createState() => _FichaViewScreenState();
@@ -31,11 +44,32 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
     _recarregar();
   }
 
-  void _recarregar() => setState(() => f = FichaStore.porId(widget.fichaId));
+  @override
+  void didUpdateWidget(FichaViewScreen anterior) {
+    super.didUpdateWidget(anterior);
+    // a ficha da mesa muda sozinha enquanto o mestre olha
+    if (widget.fichaDireta != null &&
+        !identical(widget.fichaDireta, anterior.fichaDireta)) {
+      _recarregar();
+    }
+  }
+
+  void _recarregar() =>
+      setState(() => f = widget.fichaDireta ?? FichaStore.porId(widget.fichaId!));
+
+  /// Em modo leitura todo controle nasce desabilitado — é o que garante que a
+  /// tela do mestre não vira tela de edição com o botão só escondido.
+  VoidCallback? _acao(VoidCallback? f) => widget.somenteLeitura ? null : f;
 
   /// Abre o wizard inteiro (todas as etapas).
+  ///
+  /// A trava de `somenteLeitura` está aqui também, e não só no botão: o wizard
+  /// grava direto no Hive deste aparelho. Se o mestre abrisse a ficha de um
+  /// jogador por ele, gravaria uma cópia na própria coleção e o jogador não
+  /// veria mudança nenhuma — que foi exatamente o que aconteceu quando só o
+  /// botão estava escondido.
   Future<void> _editar() async {
-    if (f == null) return;
+    if (f == null || widget.somenteLeitura) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => WizardScreen(existente: f)),
     );
@@ -50,7 +84,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
   /// aparecem (ex.: o lápis de "Arete & Força de Vontade" abre só os dois).
   Future<void> _editarPasso(int passo,
       {Set<String>? secoes, String? titulo}) async {
-    if (f == null) return;
+    if (f == null || widget.somenteLeitura) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => WizardScreen(
@@ -116,7 +150,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
   /// Salva o estado de jogo imediatamente (trackers).
   Future<void> _salvarQuieto() async {
     final ficha = f;
-    if (ficha == null) return;
+    if (ficha == null || widget.somenteLeitura) return;
     await FichaStore.salvar(ficha);
     setState(() {});
   }
@@ -138,7 +172,18 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
       length: 6,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(ficha.nome.isEmpty ? 'Sem nome' : ficha.nome),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(ficha.nome.isEmpty ? 'Sem nome' : ficha.nome),
+              if (widget.somenteLeitura)
+                const Text(
+                  'ficha do jogador · só leitura',
+                  style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                ),
+            ],
+          ),
           actions: [
             IconButton(
               onPressed: _gerandoPdf ? null : _baixarPdf,
@@ -152,31 +197,35 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
                   : const Icon(Icons.download),
               tooltip: 'Baixar ficha.pdf',
             ),
-            IconButton(
-              onPressed: _editar,
-              icon: const Icon(Icons.edit_note),
-              tooltip: 'Editar ficha inteira (todas as etapas)',
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              tooltip: 'Mais ações',
-              color: Cores.pergaminho,
-              onSelected: (v) {
-                if (v == 'excluir') _confirmarExcluir();
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'excluir',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outline, color: Cores.indigo),
-                      SizedBox(width: 8),
-                      Text('Excluir ficha'),
-                    ],
+            // O PDF continua valendo em modo leitura: baixar não escreve nada
+            // e é útil para o mestre.
+            if (!widget.somenteLeitura) ...[
+              IconButton(
+                onPressed: _editar,
+                icon: const Icon(Icons.edit_note),
+                tooltip: 'Editar ficha inteira (todas as etapas)',
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'Mais ações',
+                color: Cores.pergaminho,
+                onSelected: (v) {
+                  if (v == 'excluir') _confirmarExcluir();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'excluir',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Cores.indigo),
+                        SizedBox(width: 8),
+                        Text('Excluir ficha'),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
           bottom: const TabBar(
             isScrollable: true,
@@ -198,7 +247,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
           children: [
             // 1 — Personagem
             aba([
-              FaixaSecao('Identidade', onEditar: () => _editarPasso(0)),
+              FaixaSecao('Identidade', onEditar: _acao(() => _editarPasso(0))),
               _cardIdentidade(ficha),
               _cardTipo(ficha),
               if (NarradorStore.campos().isNotEmpty) ...[
@@ -209,13 +258,13 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             // 2 — Status (trackers de jogo)
             aba([
               FaixaSecao('Arete & Força de Vontade',
-                  onEditar: () => _editarPasso(5,
+                  onEditar: _acao(() => _editarPasso(5,
                       secoes: {'arete', 'forcaVontade'},
-                      titulo: 'Arete & Força de Vontade')),
+                      titulo: 'Arete & Força de Vontade'))),
               _cardAreteFdv(ficha),
               FaixaSecao('Quintessência & Paradoxo',
-                  onEditar: () => _editarPasso(5,
-                      secoes: {'quintessencia'}, titulo: 'Quintessência')),
+                  onEditar: _acao(() => _editarPasso(5,
+                      secoes: {'quintessencia'}, titulo: 'Quintessência'))),
               _cardQuintParadoxo(ficha),
               const FaixaSecao('Vitalidade'),
               _cardVitalidade(ficha),
@@ -224,10 +273,10 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             ]),
             // 3 — Atributos & Habilidades
             aba([
-              FaixaSecao('Atributos', onEditar: () => _editarPasso(1)),
+              FaixaSecao('Atributos', onEditar: _acao(() => _editarPasso(1))),
               _bloco(GameData.atributos, ficha.atributoFinal,
                   ficha.atributosPrioridade),
-              FaixaSecao('Habilidades', onEditar: () => _editarPasso(2)),
+              FaixaSecao('Habilidades', onEditar: _acao(() => _editarPasso(2))),
               _bloco(GameData.habilidades, ficha.habilidadeFinal,
                   ficha.habilidadesPrioridade,
                   sufixos: _sufixosEspecializacao(ficha),
@@ -235,24 +284,24 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             ]),
             // 4 — Esferas
             aba([
-              FaixaSecao('Esferas', onEditar: () => _editarPasso(3)),
+              FaixaSecao('Esferas', onEditar: _acao(() => _editarPasso(3))),
               _cardEsferas(ficha),
             ]),
             // 5 — Vantagens & Defeitos
             aba([
               FaixaSecao('Antecedentes & Qualidades',
-                  onEditar: () => _editarPasso(4,
+                  onEditar: _acao(() => _editarPasso(4,
                       secoes: {'positivos'},
-                      titulo: 'Antecedentes & Qualidades')),
+                      titulo: 'Antecedentes & Qualidades'))),
               _cardPositivos(ficha),
               FaixaSecao('Defeitos',
-                  onEditar: () => _editarPasso(4,
-                      secoes: {'defeitos'}, titulo: 'Defeitos')),
+                  onEditar: _acao(() => _editarPasso(4,
+                      secoes: {'defeitos'}, titulo: 'Defeitos'))),
               _cardDefeitos(ficha),
             ]),
             // 6 — Detalhes
             aba([
-              FaixaSecao('Detalhes', onEditar: () => _editarPasso(6)),
+              FaixaSecao('Detalhes', onEditar: _acao(() => _editarPasso(6))),
               if (_temDetalhes(ficha))
                 _cardDetalhes(ficha)
               else
@@ -347,10 +396,12 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
                 visualDensity: VisualDensity.compact,
                 textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 12)),
               ),
-              onSelectionChanged: (sel) {
-                ficha.ehNpc = sel.first;
-                _salvarQuieto();
-              },
+              onSelectionChanged: widget.somenteLeitura
+                  ? null
+                  : (sel) {
+                      ficha.ehNpc = sel.first;
+                      _salvarQuieto();
+                    },
             ),
           ],
         ),
@@ -394,10 +445,12 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
             for (final o in c.opcoes)
               DropdownMenuItem(value: o, child: Text(o)),
           ],
-          onChanged: (v) {
-            ficha.setCampo(c.id, v);
-            _salvarQuieto();
-          },
+          onChanged: widget.somenteLeitura
+              ? null
+              : (v) {
+                  ficha.setCampo(c.id, v);
+                  _salvarQuieto();
+                },
         );
         break;
       default:
@@ -406,6 +459,7 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
           child: TextFormField(
             initialValue: '${ficha.campo(c.id) ?? ''}',
             textAlign: TextAlign.end,
+            readOnly: widget.somenteLeitura,
             keyboardType:
                 c.tipo == TipoCampo.numero ? TextInputType.number : null,
             decoration: const InputDecoration(isDense: true),
@@ -597,10 +651,12 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
   }
 
   // ---------- Arete & Força de Vontade ----------
+  // `_acao` aqui trava todos os + e − de uma vez: Arete, Força de Vontade,
+  // Quintessência, Paradoxo, XP e vitalidade passam por estes dois.
   Widget _mais(VoidCallback? on) => IconButton(
-      icon: const Icon(Icons.add_circle_outline), onPressed: on);
+      icon: const Icon(Icons.add_circle_outline), onPressed: _acao(on));
   Widget _menos(VoidCallback? on) => IconButton(
-      icon: const Icon(Icons.remove_circle_outline), onPressed: on);
+      icon: const Icon(Icons.remove_circle_outline), onPressed: _acao(on));
 
   Widget _cardAreteFdv(Ficha ficha) {
     return Card(
@@ -741,10 +797,10 @@ class _FichaViewScreenState extends State<FichaViewScreen> {
           children: [
             for (int i = 0; i < niveis.length; i++)
               InkWell(
-                onTap: () {
+                onTap: _acao(() {
                   ficha.vitalidadeDano = (dano == i + 1) ? i : i + 1;
                   _salvarQuieto();
-                },
+                }),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(

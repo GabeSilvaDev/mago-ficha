@@ -27,6 +27,33 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Duas versões instaláveis lado a lado no mesmo aparelho:
+    //  * estavel — o app publicado, id com.kodem.mago_a_ascensao
+    //  * beta    — o mesmo app com `.beta` no id e outro nome na gaveta,
+    //              para experimentar sem derrubar a ficha que está em uso.
+    //              (o AGP não aceita flavor começando com "test")
+    // Ambas assinadas com a MESMA chave, então cada uma atualiza por cima
+    // de si mesma sem desinstalar.
+    // resValue (o nome do app por canal) vem desligado por padrão no AGP novo
+    buildFeatures {
+        resValues = true
+    }
+
+    flavorDimensions += "canal"
+
+    productFlavors {
+        create("estavel") {
+            dimension = "canal"
+            resValue("string", "app_name", "Mago: A Ascensão")
+        }
+        create("beta") {
+            dimension = "canal"
+            applicationIdSuffix = ".beta"
+            versionNameSuffix = "-beta"
+            resValue("string", "app_name", "Mago (teste)")
+        }
+    }
+
     defaultConfig {
         applicationId = "com.kodem.mago_a_ascensao"
         minSdk = flutter.minSdkVersion

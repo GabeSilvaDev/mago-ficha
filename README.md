@@ -283,6 +283,73 @@ existe no aparelho, pergunta o que fazer: duplicar, substituir ou pular.
 
 ---
 
+## Mesa online (opcional)
+
+O app é offline e continua sendo. A mesa é um extra que só existe enquanto
+alguém quer: sem entrar em mesa nenhuma, nada de rede acontece — criar ficha,
+PDF e backup funcionam em modo avião do mesmo jeito.
+
+**Como funciona numa sessão.** O mestre cria a mesa e dita um código de seis
+caracteres (`MAGO-XXXX`). Quem entra vira jogador e aparece na lista, com uma
+bolinha que fica cinza depois de 90 segundos sem sinal.
+
+O jogador escolhe **publicar uma ficha**. A partir daí, o que ele marca —
+dano, Força de Vontade, Quintessência, Paradoxo, experiência — chega ao mestre
+em segundos. As escritas são agrupadas numa janela de 2s: marcar dano salva a
+ficha a cada toque, e mandar toque a toque seria uma escrita por toque.
+
+**O mestre só olha.** A ficha publicada abre para ele sem lápis e com os `+`/`−`
+mortos; a única exceção é baixar o PDF, que não escreve nada. Quem garante isso
+não é a tela, é a regra do Firestore: só o dono escreve na própria ficha. As
+fichas da sessão aparecem também na galeria do narrador, marcadas como
+`na mesa · só leitura`.
+
+**Um jogador não vê a ficha do outro.** Só o dono e o mestre.
+
+**Mural e galeria.** Toda imagem que o mestre sobe fica guardada na galeria da
+mesa, em ordem, e nada é sobrescrito — a mesa acumula, não troca uma imagem
+pela outra. Ao pôr uma imagem, o mestre escolhe entre **Guardar na galeria**
+(silencioso, só entra no acervo) e **Mostrar agora**, que abre em tela cheia no
+aparelho de todo mundo na mesa, com o mesmo modo mostrar do caderno — e
+continua na aba Mesa enquanto estiver em destaque, para quem fechou reabrir sem
+depender do mestre mostrar de novo. Qualquer um na mesa abre uma imagem antiga
+da galeria quando quiser: a grade carrega só miniaturas, e a imagem cheia é
+baixada nessa hora, não antes — sem a miniatura separada, abrir uma galeria com
+50 imagens baixaria uns 15 MB de uma vez, o que estouraria a cota gratuita do
+Firestore. A imagem cheia vai em base64 dentro do próprio documento — sem
+Firebase Storage, que hoje exige plano pago —, então o app reduz até caber com
+folga no limite de 1 MiB por documento.
+
+**A mesa dura entre sessões.** O aparelho lembra as mesas em que já entrou, e
+voltar é um toque na aba Mesa — o código só é necessário para quem nunca entrou
+nessa mesa. **Encerrar sessão** tira todo mundo da lista de membros (inclusive
+o mestre) e retira as fichas publicadas, mas a mesa, o código e a galeria
+continuam de pé, para a mesma crônica se reencontrar no sábado seguinte.
+**Apagar mesa** é outra coisa: separado, irreversível, leva a galeria junto, e
+por isso exige digitar o nome da mesa para confirmar — um toque errado não some
+com meses de sessão.
+
+**Chave de recuperação.** Ao criar a mesa, o app mostra uma chave nesse formato
+— `MAGO-XXXX-XXXX` — uma única vez; depois disso ela não aparece de novo em
+lugar nenhum. Ela existe porque o login é anônimo e a identidade do mestre vive
+só no aparelho: limpar os dados do app ou trocar de celular destrói o uid, e
+sem a chave a mesa ficaria sem dono, com a galeria inteira presa numa mesa que
+ninguém mais comanda. Com a chave em mãos, o mestre reassume a mesa em
+qualquer aparelho, mesmo um em que nunca tinha entrado. **Quem tem a chave
+manda na mesa** — o peso dela é o de uma senha, e pede o mesmo cuidado. Ela
+fica guardada num documento que ninguém consegue ler: as regras de segurança
+do Firestore não dão `read` a esse documento para ninguém, nem ao mestre —
+só as próprias regras a alcançam, com `get()`, na hora de comparar.
+
+**Sair volta tudo ao normal.** Tirar a ficha da mesa, sair ou o mestre encerrar
+a sessão: as cópias na nuvem somem e a ficha local continua com tudo que foi
+marcado durante a sessão.
+
+O roteiro de verificação manual — o que não dá para testar sem dois aparelhos de
+verdade — está em [`docs/mesa-verificacao-manual.md`](docs/mesa-verificacao-manual.md).
+
+---
+
 ## No celular e no PC
 
 A mesma build serve os dois: em tela estreita a navegação fica embaixo, e a
@@ -293,6 +360,21 @@ No iPhone, a página declara `viewport` com `viewport-fit=cover`: sem isso o
 Safari desenha tudo como se a tela tivesse 980px e encolhe o app inteiro.
 
 ## Instalar
+
+### Dois canais no mesmo aparelho
+
+A partir da branch `mesa-online` o app tem dois canais, assinados com a mesma
+chave e com ids diferentes — dá para ter os dois instalados lado a lado:
+
+```bash
+flutter build apk --release --flavor estavel   # com.kodem.mago_a_ascensao        "Mago: A Ascensão"
+flutter build apk --release --flavor beta      # com.kodem.mago_a_ascensao.beta   "Mago (teste)"
+```
+
+O canal `beta` existe para testar mudanças grandes sem tocar na ficha que está
+em uso na mesa. Cada canal atualiza por cima de si mesmo; um nunca desinstala o
+outro. Com os canais definidos, `flutter build apk` sem `--flavor` não funciona
+mais — é preciso dizer qual.
 
 ### Android
 

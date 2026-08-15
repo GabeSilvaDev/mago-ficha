@@ -11,6 +11,10 @@ import '../widgets/layout.dart';
 import '../widgets/retrato.dart';
 import 'wizard_screen.dart';
 import 'ficha_view_screen.dart';
+import '../mesa/mesa_firestore.dart';
+import '../mesa/mesa_store.dart';
+import '../mesa/ouvinte_mural.dart';
+import '../mesa/telas/mesa_aba.dart';
 import 'narrador/narrador_screen.dart';
 
 /// Duas áreas: a lista de magos dos jogadores e a área do narrador.
@@ -197,10 +201,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Dentro de uma mesa, a imagem que o mestre põe no mural abre por cima de
+    // qualquer aba. Fora de mesa nada é assinado.
+    return ValueListenableBuilder(
+      valueListenable: MesaStore.listenable,
+      builder: (context, _, _) {
+        final estado = MesaStore.atual;
+        final tela = _tela(context);
+        if (estado == null) return tela;
+        return OuvinteMural(
+          servico: MesaFirestore(),
+          mesaId: estado.mesaId,
+          child: tela,
+        );
+      },
+    );
+  }
+
+  Widget _tela(BuildContext context) {
     final larga = telaLarga(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_aba == 0 ? 'MAGO: A ASCENSÃO' : 'NARRADOR'),
+        title: Text(const ['MAGO: A ASCENSÃO', 'MESA', 'NARRADOR'][_aba]),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -251,6 +273,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         selectedIcon: Icon(Icons.auto_awesome),
                         label: Text('Magos')),
                     NavigationRailDestination(
+                        icon: Icon(Icons.groups_outlined),
+                        selectedIcon: Icon(Icons.groups),
+                        label: Text('Mesa')),
+                    NavigationRailDestination(
                         icon: Icon(Icons.menu_book_outlined),
                         selectedIcon: Icon(Icons.menu_book),
                         label: Text('Narrador')),
@@ -272,6 +298,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     selectedIcon: Icon(Icons.auto_awesome),
                     label: 'Magos'),
                 NavigationDestination(
+                    icon: Icon(Icons.groups_outlined),
+                    selectedIcon: Icon(Icons.groups),
+                    label: 'Mesa'),
+                NavigationDestination(
                     icon: Icon(Icons.menu_book_outlined),
                     selectedIcon: Icon(Icons.menu_book),
                     label: 'Narrador'),
@@ -282,7 +312,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _corpo(BuildContext context) => IndexedStack(
         index: _aba,
-        children: [_abaMagos(context), const NarradorScreen()],
+        children: [
+          _abaMagos(context),
+          // a Mesa fica no meio porque o jogador precisa alcançar ela, e ele
+          // nunca abre a aba Narrador
+          const MesaAba(),
+          const NarradorScreen(),
+        ],
       );
 
   /// Lista dos magos dos jogadores. NPCs ficam só na galeria do narrador.

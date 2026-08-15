@@ -1,0 +1,131 @@
+rules_version = '2';
+
+// Não existe servidor neste projeto: estas regras SÃO a segurança da mesa.
+// Elas cabem em uma tela de propósito — regra que ninguém lê inteira é regra
+// que ninguém audita.
+//
+// Publicar:  firebase deploy --only firestore:rules --project <id>
+// Conferir:  docs/mesa-verificacao-manual.md
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function logado()  { return request.auth != null; }
+    function uid()     { return request.auth.uid; }
+    function mesa(id)  { return get(/databases/$(db)/documents/mesas/$(id)).data; }
+    function souMestre(id) { return logado() && mesa(id).mestreUid == uid(); }
+    function souMembro(id) {
+      return logado() &&
+        exists(/databases/$(db)/documents/mesas/$(id)/membros/$(uid()));
+    }
+
+    // Só quem provou a chave certa (pedido == chave guardada, ambos lidos
+    // via get() porque ninguém tem `read` em `privado/*`) pode virar mestre
+    // trocando `mestreUid` — e só esse campo, nada mais muda por aqui.
+    function reassumindo(id) {
+      let pedido = get(/databases/$(db)/documents/mesas/$(id)/privado/pedido).data;
+      let guardada = get(/databases/$(db)/documents/mesas/$(id)/privado/chave).data;
+      return logado() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['mestreUid']) &&
+        request.resource.data.mestreUid == uid() &&
+        pedido.uid == uid() &&
+        pedido.chave == guardada.chave;
+    }
+
+    // Resolver código -> mesa. Qualquer logado busca UM código que já sabe de
+    // cor (`get`), porque quem vai entrar ainda não é membro. `list` fica
+    // negado de propósito: é o que impede varrer a coleção inteira e sair
+    // com todos os pares código->mesaId do projeto — sem isso, um anônimo
+    // qualquer entraria em toda mesa como jogador só de listar `codigos`. O
+    // cliente nunca precisa de `list` aqui: só faz `.doc(x).get()`, `.set` e
+    // `.delete`. Só o mestre da mesa apontada cria e apaga — por isso a mesa
+    // é criada primeiro e o código depois.
+    match /codigos/{codigo} {
+      allow get: if logado();
+      allow list: if false;
+      allow create: if logado() &&
+        get(/databases/$(db)/documents/mesas/$(request.resource.data.mesaId))
+          .data.mestreUid == uid();
+      allow delete: if logado() &&
+        get(/databases/$(db)/documents/mesas/$(resource.data.mesaId))
+          .data.mestreUid == uid();
+      allow update: if false;
+    }
+
+    match /mesas/{mesaId} {
+      // Depois de `encerrarSessao` ninguém é membro — nem o mestre, cujo
+      // registro de membro também é apagado. Sem a segunda metade o próprio
+      // mestre levaria permission-denied ao reabrir a mesa, inclusive no
+      // get() que `apagarMesa` faz antes de apagar.
+      allow read:   if souMembro(mesaId) || souMestre(mesaId);
+      allow create: if logado() && request.resource.data.mestreUid == uid();
+      // O mestre manda na mesa. A outra metade é a recuperação: quem prova a
+      // chave vira mestre, e SÓ isso — nenhum outro campo pode mudar por aqui.
+      allow update: if souMestre(mesaId) || reassumindo(mesaId);
+      allow delete: if souMestre(mesaId);
+
+      // A galeria da crônica: todo membro vê, só o mestre mexe. `souMestre`
+      // entra pelo mesmo motivo do `allow read` da mesa: `encerrarSessao`
+      // preserva a galeria de propósito, e o mestre que reabre a mesa
+      // encerrada precisa continuar enxergando o que ele preservou.
+      match /galeria/{imagemId} {
+        allow read:  if souMembro(mesaId) || souMestre(mesaId);
+        allow write: if souMestre(mesaId);
+      }
+
+      // A imagem cheia, buscada só quando alguém abre. Mesmo motivo acima.
+      match /imagens/{imagemId} {
+        allow read:  if souMembro(mesaId) || souMestre(mesaId);
+        allow write: if souMestre(mesaId);
+      }
+
+      // Ninguém lê estes dois: só as regras, com get(). É o que permite
+      // guardar a chave sem entregá-la a quem entra na mesa. O mestre
+      // precisa poder apagar os dois ao apagar a mesa — sem isso ficariam
+      // órfãos para sempre, já que ninguém mais alcança o próprio id.
+      match /privado/chave {
+        allow read: if false;
+        allow create: if souMestre(mesaId);
+        allow update: if false;
+        allow delete: if souMestre(mesaId);
+      }
+      match /privado/pedido {
+        allow read: if false;
+        allow create, update: if logado();
+        allow delete: if souMestre(mesaId);
+      }
+
+      match /membros/{membroUid} {
+        // O próprio registro se lê sempre: quem está entrando ainda não é
+        // membro, e `souMembro` procura justamente o doc que ele vai criar.
+        // Sem esta metade a mesa fica trancada por fora — só entra quem já
+        // entrou.
+        allow read: if souMembro(mesaId) || (logado() && membroUid == uid());
+        // entrar e bater ponto: só o próprio
+        allow create, update: if logado() && membroUid == uid();
+        // sair (o próprio) ou ser removido (o mestre)
+        allow delete: if logado() && (membroUid == uid() || souMestre(mesaId));
+      }
+
+      // A ficha do jogador: ele e o mestre. Mais ninguém — nem os outros
+      // jogadores da mesma mesa. Escrita só do dono: o mestre lê.
+      match /fichas/{donoUid} {
+        allow read:  if logado() && (donoUid == uid() || souMestre(mesaId));
+        allow write: if logado() && donoUid == uid();
+        // O mestre não escreve na ficha de ninguém, mas precisa poder apagar
+        // ao fechar a mesa — senão a cópia fica órfã para sempre, sem mesa
+        // que dê acesso a ela. Apagar a cópia não mexe na ficha do jogador,
+        // que continua no aparelho dele.
+        allow delete: if souMestre(mesaId);
+      }
+
+      // Fase 3. Mural de imagens: todos leem, só o mestre escreve. Mesmo
+      // motivo do `allow read` da mesa e da galeria: o mestre precisa
+      // continuar lendo depois de `encerrarSessao`, quando já não é membro.
+      match /mural/{doc} {
+        allow read:  if souMembro(mesaId) || souMestre(mesaId);
+        allow write: if souMestre(mesaId);
+      }
+    }
+  }
+}
